@@ -15,6 +15,10 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+# The AI tutor (needs ANTHROPIC_API_KEY or an `ant auth login` profile)
+tutor = ["anthropic>=2.12"]
+# The local web app (Phase 2)
+app = ["fastapi>=0.110", "uvicorn>=0.29", "httpx>=0.27"]   # httpx: FastAPI TestClient
 # WebAssembly builds of Yosys + SymbiYosys; enough for smtbmc tasks.
 # ABC-based engines (abc pdr) need the native OSS CAD Suite instead.
 hdl = ["yowasp-yosys==0.71.0.0.post1285"]
@@ -23,10 +27,15 @@ hdl = ["yowasp-yosys==0.71.0.0.post1285"]
 satlab = "satlab.cli:main"
 sv2lean = "sv2lean.__main__:main"
 ftwin = "ftwin.__main__:main"
+tutor = "tutor.__main__:main"
+pvs-app = "app.backend.main:main"
 
 [tool.setuptools.packages.find]
 where = [".", "tools"]
-include = ["satlab*", "sv2lean*", "ftwin*"]
+include = ["satlab*", "sv2lean*", "ftwin*", "tutor*", "app*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.setuptools.package-data]
+app = ["frontend/*"]

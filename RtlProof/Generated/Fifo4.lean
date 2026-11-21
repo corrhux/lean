@@ -17,8 +17,12 @@ namespace Gen.Fifo4
 open RtlProof
 set_option linter.unusedVariables false  -- combinational designs ignore `s`, etc.
 
-/-- Inputs of `fifo` (clock `clk` removed). -/
+/-- Inputs of `fifo` (clock `clk` removed). Fields `undef_k` stand for constant `x` bits in the RTL: values the hardware does not promise, so proofs must hold for every value of them. -/
 structure Input where
+  undef_0 : BitVec 4
+  undef_1 : BitVec 2
+  undef_2 : BitVec 4
+  undef_3 : BitVec 2
   rst : BitVec 1
   push : BitVec 1
   pop : BitVec 1
@@ -89,6 +93,7 @@ structure Comb where
   w46 : BitVec 2
 deriving Repr
 
+set_option maxRecDepth 16384 in
 /-- All combinational logic, in dependency order. -/
 def comb (s : State) (i : Input) : Comb :=
   -- $eq rtl/fifo/fifo.sv:24.19-24.39
@@ -122,9 +127,9 @@ def comb (s : State) (i : Input) : Comb :=
   -- $logic_not rtl/fifo/fifo.sv:57.63-57.79
   let w14 : BitVec 1 := BitVec.ofBool (w13 == 0#1)
   -- $mux rtl/fifo/fifo.sv:38.11-38.18|rtl/fifo/fifo.sv:38.7-41.10
-  let w38 : BitVec 2 := (if do_push = 1#1 then s.wptr else 0#2)
+  let w38 : BitVec 2 := (if do_push = 1#1 then s.wptr else i.undef_1)
   -- $mux rtl/fifo/fifo.sv:33.9-33.12|rtl/fifo/fifo.sv:33.5-44.8
-  let w42 : BitVec 2 := (if i.rst = 1#1 then 0#2 else w38)
+  let w42 : BitVec 2 := (if i.rst = 1#1 then i.undef_3 else w38)
   -- $eq $auto$memory_map.cc:95:addr_decode$187
   let w19 : BitVec 1 := BitVec.ofBool (((w42.extractLsb 0 0) : BitVec 1) == 0#1)
   -- $eq $auto$memory_map.cc:95:addr_decode$189
@@ -160,9 +165,9 @@ def comb (s : State) (i : Input) : Comb :=
   -- $and $memory\mem$wren[3][0][0]$215
   let w29 : BitVec 1 := (w18 &&& w40)
   -- $mux rtl/fifo/fifo.sv:38.11-38.18|rtl/fifo/fifo.sv:38.7-41.10
-  let w37 : BitVec 4 := (if do_push = 1#1 then i.din else 0#4)
+  let w37 : BitVec 4 := (if do_push = 1#1 then i.din else i.undef_0)
   -- $mux rtl/fifo/fifo.sv:33.9-33.12|rtl/fifo/fifo.sv:33.5-44.8
-  let w41 : BitVec 4 := (if i.rst = 1#1 then 0#4 else w37)
+  let w41 : BitVec 4 := (if i.rst = 1#1 then i.undef_2 else w37)
   -- $mux $memory\mem$wrmux[0][0][0]$195
   let w30 : BitVec 4 := (if w26 = 1#1 then w41 else s.mem_0)
   -- $mux $memory\mem$wrmux[1][0][0]$203
@@ -185,7 +190,20 @@ def comb (s : State) (i : Input) : Comb :=
   let w45 : BitVec 2 := (if do_pop = 1#1 then w7 else s.rptr)
   -- $mux rtl/fifo/fifo.sv:33.9-33.12|rtl/fifo/fifo.sv:33.5-44.8
   let w46 : BitVec 2 := (if i.rst = 1#1 then 0#2 else w45)
-  { full, empty, w3, do_push, w5, do_pop, w6, w7, w8, w9, w10, w12, w11, w13, w14, w38, w42, w19, w20, w15, w21, w16, w22, w17, w18, w24, w25, dout, w36, w40, w26, w27, w28, w29, w37, w41, w30, w31, w32, w33, c_full_EN, w35, w39, w43, w44, w45, w46 }
+  Comb.mk full empty w3 do_push w5 do_pop w6 w7 w8 w9 w10 w12 w11 w13 w14 w38 w42 w19 w20 w15 w21 w16 w22 w17 w18 w24 w25 dout w36 w40 w26 w27 w28 w29 w37 w41 w30 w31 w32 w33 c_full_EN w35 w39 w43 w44 w45 w46
+
+/-- The module's output ports (some are plain wires, not combinational cells). -/
+structure Outputs where
+  dout : BitVec 4
+  full : BitVec 1
+  empty : BitVec 1
+  count : BitVec 3
+deriving Repr
+
+/-- Output ports, given the current state and inputs. -/
+def outputs (s : State) (i : Input) : Outputs :=
+  let w := comb s i
+  Outputs.mk (w.dout) (w.full) (w.empty) (s.count)
 
 /-- One clock edge. -/
 def step (s : State) (i : Input) : State :=

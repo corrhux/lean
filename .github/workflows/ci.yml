@@ -44,6 +44,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -52,7 +54,13 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
             | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - run: pip install -e ".[dev,hdl]"
+      - run: pip install -e ".[dev,hdl,tutor,app]"
+      - name: Install sv2v (SystemVerilog to Verilog, for Ibex)
+        run: |
+          curl -sSfL -o /tmp/sv2v.zip https://github.com/zachjs/sv2v/releases/download/v0.0.13/sv2v-Linux.zip
+          python3 -c "import zipfile; zipfile.ZipFile('/tmp/sv2v.zip').extractall('/tmp/sv2v')"
+          mkdir -p "$HOME/.local/bin" && install -m 755 /tmp/sv2v/sv2v-Linux/sv2v "$HOME/.local/bin/sv2v"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: lake build
       - name: No sorry in the library (exercises excluded)
         run: "! grep -rn --include='*.lean' --exclude='Exercise.lean' -w sorry RtlProof"
@@ -60,8 +68,8 @@ jobs:
         run: for f in $(find RtlProof -name Exercise.lean); do lake env lean "$f"; done
       - name: Course code compiles (LEAN_FLUENCY.md)
         run: python3 tools/lean_blocks.py docs/LEAN_FLUENCY.md
-      - name: sv2lean + ftwin tests (difftests against Yosys, mutation tests, twin report)
-        run: pytest -q tests/sv2lean tests/ftwin
+      - name: sv2lean, ftwin, tutor-tool and web-app tests (difftests, mutation tests, twin report, API)
+        run: pytest -q tests/sv2lean tests/ftwin tests/tutor tests/app
       - name: Generated models are up to date
         run: |
           sv2lean rtl/counter/counter.sv --top counter --namespace Gen.Counter \
@@ -72,4 +80,5 @@ jobs:
             -o RtlProof/Generated/Fifo4.lean
           sv2lean rtl/arbiter/arbiter.sv --top arbiter -P K=2 --namespace Gen.Arbiter4 \
             -o RtlProof/Generated/Arbiter4.lean
+          capstone/ibex/generate.sh
           git diff --exit-code RtlProof/Generated

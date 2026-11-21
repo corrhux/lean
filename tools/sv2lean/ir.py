@@ -41,6 +41,7 @@ class Signal:
     width: int
     kind: str                  # "input" | "reg" | "comb"
     yosys_name: Optional[str] = None
+    undef: bool = False        # stands for constant x/z bits in the RTL (an unconstrained value)
 
 
 @dataclass
@@ -80,6 +81,7 @@ class Design:
     driver: Dict[int, Tuple[Signal, int]] = field(default_factory=dict)
     clock: Optional[str] = None
     warnings: List[str] = field(default_factory=list)
+    outputs: List[Tuple[str, List[Bit]]] = field(default_factory=list)   # (port name, bits)
 
 
 _REPO = __import__("pathlib").Path(__file__).resolve().parents[2].as_posix() + "/"
@@ -87,7 +89,9 @@ _REPO = __import__("pathlib").Path(__file__).resolve().parents[2].as_posix() + "
 
 def _relsrc(src: str) -> str:
     """Source locations relative to the repository, so regenerated files are identical."""
-    return src.replace(_REPO, "")
+    src = src.replace(_REPO, "")
+    # sv2v output lives in a fresh temp dir; name it stably so regenerated files are identical
+    return re.sub(r"build/tmp/tmp[^/|]+/", "sv2v/", src)
 
 
 def _int(v: Union[str, int]) -> int:
@@ -142,6 +146,32 @@ def build(module: dict, top: str) -> Design:
             if isinstance(bit, int) and ch in "01":
                 init_of[bit] = int(ch)
 
+    # ---- x/z constants become unconstrained inputs. A proof then has to hold whatever
+    # value the hardware picks, which is how Yosys's formal backends treat x as well.
+    # (Treating x as 0 would let a proof depend on a value the RTL does not promise.)
+    next_id = 1 + max([b for c in cells.values() for bits in c["connections"].values()
+                       for b in bits if isinstance(b, int)] + [0])
+    cells = {n: dict(c, connections={k: list(v) for k, v in c["connections"].items()})
+             for n, c in cells.items()}
+    for cname in sorted(cells):
+        for port, bits in cells[cname]["connections"].items():
+            i = 0
+            while i < len(bits):
+                if bits[i] in ("x", "z"):
+                    j = i
+                    while j < len(bits) and bits[j] in ("x", "z"):
+                        j += 1
+                    sig = Signal(_ident(f"undef_{len([s for s in d.inputs if s.undef])}", used),
+                                 j - i, "input", None, undef=True)
+                    d.inputs.append(sig)
+                    for k in range(i, j):
+                        bits[k] = next_id
+                        d.driver[next_id] = (sig, k - i)
+                        next_id += 1
+                    i = j
+                else:
+                    i += 1
+
     # ---- clock
     clk_bits = set()
     for c in cells.values():
@@ -157,6 +187,9 @@ def build(module: dict, top: str) -> Design:
     for pname, p in module.get("ports", {}).items():
         if p["direction"] == "inout":
             raise UnsupportedDesign(f"inout port {pname}")
+        if p["direction"] == "output":
+            d.outputs.append((pname, list(p["bits"])))
+            continue
         if p["direction"] != "input":
             continue
         if set(p["bits"]) & clk_bits:

@@ -1,0 +1,11 @@
+# Phase 2: the local web app.   docker compose -f docker/compose.yaml up   → http://localhost:8000
+services:
+  app:
+    build: { context: .., dockerfile: docker/Dockerfile }
+    volumes: [ "..:/workspace" ]
+    working_dir: /workspace
+    ports: [ "127.0.0.1:8000:8000" ]        # localhost only (SPEC FR-W5)
+    environment: [ ANTHROPIC_API_KEY ]       # optional: passed through only if set; enables the tutor
+    command: >
+      sh -c 'git submodule update --init third_party/ibex || true;
+             pip install -q -e ".[dev,app,tutor]" && lake build && pvs-app --host 0.0.0.0'

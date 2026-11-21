@@ -103,3 +103,25 @@ def test_arbiter_with_anyconst_matches_yosys():
     assert [r.sig.name for r in free] == ["f_j"]        # anyconst → constant register
     res = difftest.run(doc, d, text, "T.Arb", seeds=4, cycles=40)
     assert res.ok, res.summary()
+
+
+IBEX = REPO / "third_party" / "ibex"
+HAVE_SV2V = bool(os.environ.get("SV2V") or shutil.which("sv2v") or Path("/opt/sv2v/bin/sv2v").exists())
+
+
+@pytest.mark.skipif(not (HAVE_SV2V and (IBEX / "rtl").is_dir()), reason="needs sv2v and the Ibex submodule")
+@pytest.mark.parametrize("top,params,extra", [
+    ("ibex_alu", {}, []),
+    ("ibex_compressed_decoder", {"RV32ZC": 0, "BaseIsa": 0}, []),
+    ("ibex_decoder", {"RV32M": 0, "RV32B": 0, "BaseIsa": 0}, ["rtl/ibex_cheriot_pkg.sv"]),
+    ("ibex_register_file_ff", {"BaseIsa": 0, "RV32E": 0, "DummyInstructions": 0}, ["rtl/ibex_cheriot_pkg.sv"]),
+])
+def test_ibex_blocks_match_yosys(top, params, extra):
+    files = [str(IBEX / "rtl/ibex_pkg.sv")] + [str(IBEX / e) for e in extra] + [str(IBEX / f"rtl/{top}.sv")]
+    doc = frontend.netlist_json(files, top, params,
+                                use_sv2v=True, defines=["SYNTHESIS"],
+                                includes=[str(IBEX / "vendor/lowrisc_ip/ip/prim/rtl"), str(IBEX / "rtl")])
+    d = ir.build(doc["modules"][top], top)
+    text = emit_lean.emit(d, f"T.{top}")
+    res = difftest.run(doc, d, text, f"T.{top}", seeds=3, cycles=60)
+    assert res.ok, res.summary()

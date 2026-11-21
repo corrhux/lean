@@ -11,3 +11,15 @@ import RtlProof.Examples.Fifo.Solution
 import RtlProof.Generated.Arbiter4
 import RtlProof.Examples.Arbiter.Fairness
 import RtlProof.Examples.Arbiter.Solution
+import RtlProof.RV32I.Spec
+import RtlProof.RV32I.Compressed
+import RtlProof.Generated.IbexAlu
+import RtlProof.Generated.IbexCDec
+import RtlProof.RV32I.Ibex.Alu
+import RtlProof.RV32I.Ibex.CDec
+import RtlProof.Generated.IbexDec
+import RtlProof.RV32I.Ibex.Decoder
+import RtlProof.RV32I.Ibex.LoadStoreJump
+import RtlProof.RV32I.Ibex.System
+import RtlProof.Generated.IbexRF
+import RtlProof.RV32I.Ibex.RegFile
