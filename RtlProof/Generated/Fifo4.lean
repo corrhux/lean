@@ -104,13 +104,13 @@ def comb (s : State) (i : Input) : Comb :=
   -- $logic_and rtl/fifo/fifo.sv:30.20-30.34
   let do_pop : BitVec 1 := BitVec.ofBool ((i.pop != 0#1) && (w5 != 0#1))
   -- $add rtl/fifo/fifo.sv:40.22-40.33
-  let w6 : BitVec 2 := (s.wptr + (1#1).setWidth 2)
+  let w6 : BitVec 2 := (s.wptr + ((1#1).setWidth 2))
   -- $add rtl/fifo/fifo.sv:42.27-42.38
-  let w7 : BitVec 2 := (s.rptr + (1#1).setWidth 2)
+  let w7 : BitVec 2 := (s.rptr + ((1#1).setWidth 2))
   -- $add rtl/fifo/fifo.sv:43.16-43.45
-  let w8 : BitVec 3 := (s.count + (do_push).setWidth 3)
+  let w8 : BitVec 3 := (s.count + ((do_push).setWidth 3))
   -- $sub rtl/fifo/fifo.sv:43.16-43.68
-  let w9 : BitVec 3 := (w8 - (do_pop).setWidth 3)
+  let w9 : BitVec 3 := (w8 - ((do_pop).setWidth 3))
   -- $le rtl/fifo/fifo.sv:53.53-53.73
   let w10 : BitVec 1 := BitVec.ofBool ((s.count).ule 4#3)
   -- $sub rtl/fifo/fifo.sv:55.53-55.64

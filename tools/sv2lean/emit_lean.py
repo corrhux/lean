@@ -68,7 +68,7 @@ def bits_expr(d: Design, bits: Sequence[Bit], ctx: Ctx) -> str:
 def ext(e: str, frm: int, to: int, signed: bool) -> str:
     if frm == to:
         return e
-    return f"({e}).signExtend {to}" if signed else f"({e}).setWidth {to}"
+    return f"(({e}).signExtend {to})" if signed else f"(({e}).setWidth {to})"
 
 
 def cell_expr(d: Design, c: CombCell, ctx: Ctx) -> str:

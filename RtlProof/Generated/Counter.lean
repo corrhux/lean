@@ -53,7 +53,7 @@ deriving Repr
 /-- All combinational logic, in dependency order. -/
 def comb (s : State) (i : Input) : Comb :=
   -- $add rtl/counter/counter.sv:19.48-19.58
-  let w0 : BitVec 4 := (s.cnt + (1#1).setWidth 4)
+  let w0 : BitVec 4 := (s.cnt + ((1#1).setWidth 4))
   -- $eq rtl/counter/counter.sv:43.51-43.62
   let w8 : BitVec 1 := BitVec.ofBool (s.cnt == 9#4)
   -- $mux rtl/counter/counter.sv:19.25-19.58

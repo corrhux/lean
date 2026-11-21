@@ -184,11 +184,12 @@ def build(module: dict, top: str) -> Design:
         elif t in ("$anyseq", "$anyconst"):
             y = c["connections"]["Y"]
             vis = exact_name(y)
+            yn = exact_name(y, prefer_visible=False)
             if t == "$anyseq":                         # a fresh value every cycle = an input
-                sig = Signal(_ident(vis or f"anyseq_{len(d.inputs)}", used), len(y), "input", None)
+                sig = Signal(_ident(vis or f"anyseq_{len(d.inputs)}", used), len(y), "input", yn)
                 d.inputs.append(sig)
             else:                                      # arbitrary but constant = free register
-                sig = Signal(_ident(vis or f"anyconst_{len(d.regs)}", used), len(y), "reg", None)
+                sig = Signal(_ident(vis or f"anyconst_{len(d.regs)}", used), len(y), "reg", yn)
                 d.regs.append(Reg(sig, list(y), list(y), [None] * len(y), free=True))
             for k, b in enumerate(y):
                 d.driver[b] = (sig, k)

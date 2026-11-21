@@ -55,7 +55,7 @@ def comb (s : State) (i : Input) : Comb :=
   -- $mux rtl/mul/mul.sv:24.49-24.76
   let w8 : BitVec 8 := (if ((i.b.extractLsb 0 0) : BitVec 1) = 1#1 then i.a else 0#8)
   -- $add rtl/mul/mul.sv:24.32-24.77
-  let w0 : BitVec 8 := ((0#1).setWidth 8 + w8)
+  let w0 : BitVec 8 := (((0#1).setWidth 8) + w8)
   -- $mux rtl/mul/mul.sv:24.49-24.76
   let w9 : BitVec 8 := (if ((i.b.extractLsb 1 1) : BitVec 1) = 1#1 then ((i.a.extractLsb 6 0) ++ 0#1 : BitVec 8) else 0#8)
   -- $add rtl/mul/mul.sv:24.32-24.77

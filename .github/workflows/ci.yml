@@ -32,11 +32,12 @@ jobs:
             yowasp-sby -f --yosys yowasp-yosys --smtbmc yowasp-yosys-smtbmc \
               --witness yowasp-yosys-witness counter.sby "$t"
           done
-      - name: mul (w4, w8) and fifo (bmc, prove, cover)
+      - name: mul (w4, w8), fifo and arbiter (bmc, prove, cover)
         run: |
           SBY="yowasp-sby -f --yosys yowasp-yosys --smtbmc yowasp-yosys-smtbmc --witness yowasp-yosys-witness"
           (cd rtl/mul && for t in w4 w8; do $SBY mul.sby "$t"; done)
           (cd rtl/fifo && for t in bmc prove cover; do $SBY fifo.sby "$t"; done)
+          (cd rtl/arbiter && for t in bmc prove cover; do $SBY arbiter.sby "$t"; done)
 
   lean:
     name: lean (lake build, course code, sv2lean)
@@ -69,4 +70,6 @@ jobs:
             -o RtlProof/Generated/Mul8.lean
           sv2lean rtl/fifo/fifo.sv --top fifo -P AW=2 -P DW=4 --namespace Gen.Fifo4 \
             -o RtlProof/Generated/Fifo4.lean
+          sv2lean rtl/arbiter/arbiter.sv --top arbiter -P K=2 --namespace Gen.Arbiter4 \
+            -o RtlProof/Generated/Arbiter4.lean
           git diff --exit-code RtlProof/Generated

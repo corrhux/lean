@@ -95,3 +95,11 @@ def test_multiplier_matches_yosys():
     doc, d, text = generate([REPO / "rtl/mul/mul.sv"], "mul", "T.Mul", {"W": 6})
     assert not d.regs                      # purely combinational: nothing to compare per cycle
     assert "p" in {c.sig.name for c in d.comb}
+
+
+def test_arbiter_with_anyconst_matches_yosys():
+    doc, d, text = generate([REPO / "rtl/arbiter/arbiter.sv"], "arbiter", "T.Arb", {"K": 2})
+    free = [r for r in d.regs if r.free]
+    assert [r.sig.name for r in free] == ["f_j"]        # anyconst → constant register
+    res = difftest.run(doc, d, text, "T.Arb", seeds=4, cycles=40)
+    assert res.ok, res.summary()

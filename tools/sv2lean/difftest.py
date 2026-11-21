@@ -59,7 +59,7 @@ def _wave_values(sig: dict, width: int, steps: int) -> List[Optional[int]]:
         elif ch == "=":
             s = data[di]
             di += 1
-            cur = int(s, 2) if set(s) <= {"0", "1"} else None
+            cur = int(s, 2) if s and set(s) <= {"0", "1"} else None
         else:
             cur = None
         out.append(cur)
@@ -71,7 +71,8 @@ def _yosys_trace(netlist_path: str, design: Design, init: Dict[str, int],
     n = len(inputs)
     args = [f"sat -seq {n}"]
     for r in design.regs:
-        args.append(f"-set-init {r.sig.yosys_name} {r.sig.width}'d{init[r.sig.name]}")
+        how = "-set" if r.free else "-set-init"      # $anyconst: same value at every step
+        args.append(f"{how} {r.sig.yosys_name} {r.sig.width}'d{init[r.sig.name]}")
     for t, vec in enumerate(inputs, 1):
         for s in design.inputs:
             args.append(f"-set-at {t} {s.yosys_name} {s.width}'d{vec[s.name]}")
@@ -89,7 +90,7 @@ def _yosys_trace(netlist_path: str, design: Design, init: Dict[str, int],
     out = {}
     for r in design.regs:
         key = r.sig.yosys_name.lstrip("\\")
-        out[r.sig.name] = _wave_values(by_name[key], r.sig.width, n)
+        out[r.sig.name] = _wave_values(by_name[key], r.sig.width, n) if key in by_name else [None] * n
     return out
 
 
@@ -140,6 +141,8 @@ def run(doc: dict, design: Design, model: str, ns: str, seeds: int = 10, cycles:
             ys = _yosys_trace(npath, design, init, inputs)
             ln = _lean_trace(model, ns, design, init, inputs)
             for r in design.regs:
+                if r.free:      # $anyconst: pinned with `sat -set`; Yosys does not dump it
+                    continue
                 for t in range(cycles):
                     yv, lv = ys[r.sig.name][t], ln[r.sig.name][t]
                     if yv != lv:
