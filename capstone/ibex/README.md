@@ -15,6 +15,8 @@ Plan and background: [docs/CAPSTONE_IBEX.md](../../docs/CAPSTONE_IBEX.md) and
 | Block | Configuration | Lean model | Proven | File |
 |---|---|---|---|---|
 | `ibex_alu` | `RV32B = RV32BNone` | `Gen.IbexAlu`: 124 cells | every RV32I ALU operation (ADD … AND, 10 ops) gives the spec result, and every branch comparison (6) agrees with the spec, for **all** operands | `RtlProof/RV32I/Ibex/Alu.lean` |
+| `ibex_decoder` | `RV32M = None`, `RV32B = None`, `BaseIsa = RV32I` | `Gen.IbexDec`: 219 cells | for **every** 32-bit instruction: legal OP/OP-IMM are accepted with the spec's ALU operation, operand sources (rs1, rs2 or the sign-extended I-immediate), rd write-back and no memory request; reserved `funct7`/shift encodings are rejected; branches set the ALU to the spec's comparison | `RtlProof/RV32I/Ibex/Decoder.lean` |
+| **decoder + ALU** | as above | both models | `op_executes`, `op_imm_executes`: for every legal OP / OP-IMM instruction and all register values, the ALU result the decoder sets up is the value the spec writes to rd | `RtlProof/RV32I/Ibex/Decoder.lean` |
 | `ibex_compressed_decoder` | `RV32ZC = RV32Zca`, `BaseIsa = RV32I` | `Gen.IbexCDec`: 63 cells | for **all** 49,152 compressed encodings: illegal exactly when the spec says so, and every legal one expands to the spec's 32-bit instruction; 32-bit instructions pass through | `RtlProof/RV32I/Ibex/CDec.lean` |
 
 The spec (`RtlProof/RV32I/Spec.lean`, `RtlProof/RV32I/Compressed.lean`) is
@@ -57,6 +59,10 @@ formal backends (so the Lean models agree with SymbiYosys on every input):
   yosys-slang, rIC3 and the Sail compiler. None of these run in the
   WebAssembly toolchain used here; the dev container image installs the CAD
   suite.
-* **More Track 2 blocks:** `ibex_decoder` (RV32I subset), the register file,
-  `ibex_multdiv_slow` (needs a sequential invariant).
+* **More Track 2 blocks:** loads, stores, jumps, LUI/AUIPC and SYSTEM in the
+  decoder; the register file; `ibex_multdiv_slow` (needs a sequential invariant).
+* **Assumptions to discharge later:** the decoder proofs assume both copies of
+  the instruction register (`instr_rdata_i`, `instr_rdata_alu_i`) hold the
+  same word. That is a fact about `ibex_id_stage`/`ibex_if_stage`, which a
+  pipeline-level proof (Track 3) would show.
 * **Track 3:** the pipeline slice refinement.

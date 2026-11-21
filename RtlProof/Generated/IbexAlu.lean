@@ -160,6 +160,7 @@ structure Comb where
   result_o : BitVec 32
 deriving Repr
 
+set_option maxRecDepth 16384 in
 /-- All combinational logic, in dependency order. -/
 def comb (s : State) (i : Input) : Comb :=
   -- $mux sv2v/ibex_alu.sv2v.v:73.64-73.64|sv2v/ibex_alu.sv2v.v:70.3-76.10
@@ -410,7 +411,21 @@ def comb (s : State) (i : Input) : Comb :=
   let w83 : BitVec 1 := BitVec.ofBool ((w111 ++ w122 ++ w108 ++ w121 ++ w113 ++ w120 ++ w116 ++ w84 : BitVec 8) != 0#8)
   -- $pmux sv2v/ibex_alu.sv2v.v:543.47-543.47|sv2v/ibex_alu.sv2v.v:531.3-547.10
   let result_o : BitVec 32 := (if ((w83 ++ w85 ++ w90 ++ w96 : BitVec 4)).getLsbD 3 then (0#31 ++ comparison_result_o : BitVec 32) else (if ((w83 ++ w85 ++ w90 ++ w96 : BitVec 4)).getLsbD 2 then shift_result else (if ((w83 ++ w85 ++ w90 ++ w96 : BitVec 4)).getLsbD 1 then ((adder_result_ext_o.extractLsb 32 1) : BitVec 32) else (if ((w83 ++ w85 ++ w90 ++ w96 : BitVec 4)).getLsbD 0 then bwlogic_result else 0#32))))
-  { adder_in_a, operand_b_neg, w48, w59, w32, w70, w73, w39, w24, w74, w75, w40, w76, w77, w41, w25, w20, w78, w79, w42, w49, w50, w43, w26, w51, w52, w44, w53, w54, w45, w27, w21, w18, w55, w56, w46, w57, w58, w47, w28, w60, w61, w33, w62, w63, w34, w29, w22, w64, w65, w35, w66, w67, w36, w30, w68, w69, w37, w71, w72, w38, w31, w23, w19, w17, adder_op_b_negate, adder_in_b, adder_result_ext_o, is_equal_result_o, w1, w2, w120, w121, w122, w109, w114, w119, cmp_signed, w3, w4, is_greater_equal, w5, w105, shift_left, shift_operand, shift_arith, w7, shift_result_ext, shift_result, bwlogic_or_result, bwlogic_and_result, bwlogic_xor_result, w99, w100, bwlogic_or, w101, w102, bwlogic_and, bwlogic_result, w108, w111, w110, w107, w113, w115, w112, w116, comparison_result_o, w97, w98, w96, w91, w92, w93, w94, w95, w90, w86, w88, w89, w85, w84, w83, result_o }
+  Comb.mk adder_in_a operand_b_neg w48 w59 w32 w70 w73 w39 w24 w74 w75 w40 w76 w77 w41 w25 w20 w78 w79 w42 w49 w50 w43 w26 w51 w52 w44 w53 w54 w45 w27 w21 w18 w55 w56 w46 w57 w58 w47 w28 w60 w61 w33 w62 w63 w34 w29 w22 w64 w65 w35 w66 w67 w36 w30 w68 w69 w37 w71 w72 w38 w31 w23 w19 w17 adder_op_b_negate adder_in_b adder_result_ext_o is_equal_result_o w1 w2 w120 w121 w122 w109 w114 w119 cmp_signed w3 w4 is_greater_equal w5 w105 shift_left shift_operand shift_arith w7 shift_result_ext shift_result bwlogic_or_result bwlogic_and_result bwlogic_xor_result w99 w100 bwlogic_or w101 w102 bwlogic_and bwlogic_result w108 w111 w110 w107 w113 w115 w112 w116 comparison_result_o w97 w98 w96 w91 w92 w93 w94 w95 w90 w86 w88 w89 w85 w84 w83 result_o
+
+/-- The module's output ports (some are plain wires, not combinational cells). -/
+structure Outputs where
+  adder_result_o : BitVec 32
+  adder_result_ext_o : BitVec 34
+  result_o : BitVec 32
+  comparison_result_o : BitVec 1
+  is_equal_result_o : BitVec 1
+deriving Repr
+
+/-- Output ports, given the current state and inputs. -/
+def outputs (s : State) (i : Input) : Outputs :=
+  let w := comb s i
+  Outputs.mk (((w.adder_result_ext_o.extractLsb 32 1) : BitVec 32)) (w.adder_result_ext_o) (w.result_o) (w.comparison_result_o) (w.is_equal_result_o)
 
 /-- One clock edge. -/
 def step (s : State) (i : Input) : State :=

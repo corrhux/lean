@@ -17,3 +17,7 @@ sv2lean "${COMMON[@]}" "$I/rtl/ibex_alu.sv" --top ibex_alu \
 # Compressed decoder, RV32ZC = RV32Zca (standard C only), BaseIsa = BaseIsaRV32I
 sv2lean "${COMMON[@]}" "$I/rtl/ibex_compressed_decoder.sv" --top ibex_compressed_decoder \
   -P RV32ZC=0 -P BaseIsa=0 --namespace Gen.IbexCDec -o RtlProof/Generated/IbexCDec.lean "${EXTRA[@]}"
+
+# Decoder, plain RV32I: RV32M = RV32MNone, RV32B = RV32BNone, BaseIsa = BaseIsaRV32I
+sv2lean "${COMMON[@]}" "$I/rtl/ibex_cheriot_pkg.sv" "$I/rtl/ibex_decoder.sv" --top ibex_decoder \
+  -P RV32M=0 -P RV32B=0 -P BaseIsa=0 --namespace Gen.IbexDec -o RtlProof/Generated/IbexDec.lean "${EXTRA[@]}"

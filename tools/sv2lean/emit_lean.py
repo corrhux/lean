@@ -204,18 +204,35 @@ def emit(d: Design, namespace: str, source_note: str = "") -> str:
     struct("Comb", "Combinational signals.", [c.sig for c in d.comb], "Repr")
 
     inner = Ctx("")
+    add("set_option maxRecDepth 16384 in")
     add("/-- All combinational logic, in dependency order. -/")
     add("def comb (s : State) (i : Input) : Comb :=")
     for c in d.comb:
         add(f"  -- {c.type} {c.src}")
         add(f"  let {c.sig.name} : BitVec {c.sig.width} := {cell_expr(d, c, inner)}")
     if d.comb:
-        add("  { " + ", ".join(c.sig.name for c in d.comb) + " }")
+        # positional constructor: a `{ a, b, … }` literal with hundreds of fields is slow to elaborate
+        add("  Comb.mk " + " ".join(c.sig.name for c in d.comb))
     else:
         add("  {}")
     add("")
 
     outer = Ctx("w.")
+    if d.outputs:
+        from .ir import _ident
+        oused: set = set()
+        onames = [(_ident(n, oused), n, bits) for n, bits in d.outputs]
+        add("/-- The module's output ports (some are plain wires, not combinational cells). -/")
+        add("structure Outputs where")
+        for ln, _, bits in onames:
+            add(f"  {ln} : BitVec {len(bits)}")
+        add("deriving Repr")
+        add("")
+        add("/-- Output ports, given the current state and inputs. -/")
+        add("def outputs (s : State) (i : Input) : Outputs :=")
+        add("  let w := comb s i")
+        add("  Outputs.mk " + " ".join(f"({bits_expr(d, bits, outer)})" for _, _, bits in onames))
+        add("")
     add("/-- One clock edge. -/")
     add("def step (s : State) (i : Input) : State :=")
     add("  let w := comb s i")

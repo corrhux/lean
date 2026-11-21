@@ -50,6 +50,7 @@ structure Comb where
   w13 : BitVec 4
 deriving Repr
 
+set_option maxRecDepth 16384 in
 /-- All combinational logic, in dependency order. -/
 def comb (s : State) (i : Input) : Comb :=
   -- $add rtl/counter/counter.sv:19.48-19.58
@@ -80,7 +81,17 @@ def comb (s : State) (i : Input) : Comb :=
   let w12 : BitVec 4 := (if i.en = 1#1 then w1 else s.cnt)
   -- $mux rtl/counter/counter.sv:18.9-18.12|rtl/counter/counter.sv:18.5-19.59
   let w13 : BitVec 4 := (if i.rst = 1#1 then 0#4 else w12)
-  { w0, w8, w1, w2, w3, w6, w4, w7, w5, p_hold_EN, c_reach_9_EN, w11, w12, w13 }
+  Comb.mk w0 w8 w1 w2 w3 w6 w4 w7 w5 p_hold_EN c_reach_9_EN w11 w12 w13
+
+/-- The module's output ports (some are plain wires, not combinational cells). -/
+structure Outputs where
+  cnt : BitVec 4
+deriving Repr
+
+/-- Output ports, given the current state and inputs. -/
+def outputs (s : State) (i : Input) : Outputs :=
+  let w := comb s i
+  Outputs.mk (s.cnt)
 
 /-- One clock edge. -/
 def step (s : State) (i : Input) : State :=

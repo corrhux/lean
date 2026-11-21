@@ -82,6 +82,7 @@ structure Comb where
   w42 : BitVec 2
 deriving Repr
 
+set_option maxRecDepth 16384 in
 /-- All combinational logic, in dependency order. -/
 def comb (s : State) (i : Input) : Comb :=
   -- $shr rtl/arbiter/arbiter.sv:28.20-28.37
@@ -176,7 +177,17 @@ def comb (s : State) (i : Input) : Comb :=
   let w41 : BitVec 2 := (if w7 = 1#1 then w6 else s.ptr)
   -- $mux rtl/arbiter/arbiter.sv:41.9-41.12|rtl/arbiter/arbiter.sv:41.5-42.47
   let w42 : BitVec 2 := (if i.rst = 1#1 then 0#2 else w41)
-  { rot, w3, w1, rot_gnt, dgnt, w45, w44, off, w5, w6, w7, w10, w8, w9, w13, w11, w12, w14, w16, w15, f_req_j, f_gnt_j, w22, w20, w21, w23, w19, w24, w25, w26, w27, w28, w29, f_dist, w31, w34, w32, w33, w35, p_fair_helper_EN, c_wait3_EN, w38, w39, w40, w41, w42 }
+  Comb.mk rot w3 w1 rot_gnt dgnt w45 w44 off w5 w6 w7 w10 w8 w9 w13 w11 w12 w14 w16 w15 f_req_j f_gnt_j w22 w20 w21 w23 w19 w24 w25 w26 w27 w28 w29 f_dist w31 w34 w32 w33 w35 p_fair_helper_EN c_wait3_EN w38 w39 w40 w41 w42
+
+/-- The module's output ports (some are plain wires, not combinational cells). -/
+structure Outputs where
+  gnt : BitVec 4
+deriving Repr
+
+/-- Output ports, given the current state and inputs. -/
+def outputs (s : State) (i : Input) : Outputs :=
+  let w := comb s i
+  Outputs.mk (((w.dgnt.extractLsb 7 4) : BitVec 4))
 
 /-- One clock edge. -/
 def step (s : State) (i : Input) : State :=

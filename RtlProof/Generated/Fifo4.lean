@@ -93,6 +93,7 @@ structure Comb where
   w46 : BitVec 2
 deriving Repr
 
+set_option maxRecDepth 16384 in
 /-- All combinational logic, in dependency order. -/
 def comb (s : State) (i : Input) : Comb :=
   -- $eq rtl/fifo/fifo.sv:24.19-24.39
@@ -189,7 +190,20 @@ def comb (s : State) (i : Input) : Comb :=
   let w45 : BitVec 2 := (if do_pop = 1#1 then w7 else s.rptr)
   -- $mux rtl/fifo/fifo.sv:33.9-33.12|rtl/fifo/fifo.sv:33.5-44.8
   let w46 : BitVec 2 := (if i.rst = 1#1 then 0#2 else w45)
-  { full, empty, w3, do_push, w5, do_pop, w6, w7, w8, w9, w10, w12, w11, w13, w14, w38, w42, w19, w20, w15, w21, w16, w22, w17, w18, w24, w25, dout, w36, w40, w26, w27, w28, w29, w37, w41, w30, w31, w32, w33, c_full_EN, w35, w39, w43, w44, w45, w46 }
+  Comb.mk full empty w3 do_push w5 do_pop w6 w7 w8 w9 w10 w12 w11 w13 w14 w38 w42 w19 w20 w15 w21 w16 w22 w17 w18 w24 w25 dout w36 w40 w26 w27 w28 w29 w37 w41 w30 w31 w32 w33 c_full_EN w35 w39 w43 w44 w45 w46
+
+/-- The module's output ports (some are plain wires, not combinational cells). -/
+structure Outputs where
+  dout : BitVec 4
+  full : BitVec 1
+  empty : BitVec 1
+  count : BitVec 3
+deriving Repr
+
+/-- Output ports, given the current state and inputs. -/
+def outputs (s : State) (i : Input) : Outputs :=
+  let w := comb s i
+  Outputs.mk (w.dout) (w.full) (w.empty) (s.count)
 
 /-- One clock edge. -/
 def step (s : State) (i : Input) : State :=

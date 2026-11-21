@@ -112,6 +112,7 @@ structure Comb where
   instr_o : BitVec 32
 deriving Repr
 
+set_option maxRecDepth 16384 in
 /-- All combinational logic, in dependency order. -/
 def comb (s : State) (i : Input) : Comb :=
   -- $logic_not sv2v/ibex_compressed_decoder.sv2v.v:222.11-222.39
@@ -240,7 +241,20 @@ def comb (s : State) (i : Input) : Comb :=
   let illegal_instr_o : BitVec 1 := (if ((w55 ++ w53 ++ w23 ++ w61 : BitVec 4)).getLsbD 3 then w58 else (if ((w55 ++ w53 ++ w23 ++ w61 : BitVec 4)).getLsbD 2 then w46 else (if ((w55 ++ w53 ++ w23 ++ w61 : BitVec 4)).getLsbD 1 then w21 else (if ((w55 ++ w53 ++ w23 ++ w61 : BitVec 4)).getLsbD 0 then 0#1 else i.undef_10))))
   -- $pmux sv2v/ibex_compressed_decoder.sv2v.v:549.12-549.12|sv2v/ibex_compressed_decoder.sv2v.v:213.3-553.10
   let instr_o : BitVec 32 := (if ((w55 ++ w53 ++ w23 ++ w61 : BitVec 4)).getLsbD 3 then w59 else (if ((w55 ++ w53 ++ w23 ++ w61 : BitVec 4)).getLsbD 2 then w43 else (if ((w55 ++ w53 ++ w23 ++ w61 : BitVec 4)).getLsbD 1 then w22 else (if ((w55 ++ w53 ++ w23 ++ w61 : BitVec 4)).getLsbD 0 then i.instr_i else i.undef_11))))
-  { w0, w1, w2, w3, w4, w5, is_compressed_o, w54, w51, w49, w52, w50, w47, w7, w30, w31, w32, w33, w8, w26, w27, w28, w29, w9, w48, w10, w11, w56, w12, w13, w14, w15, w16, w17, w18, w19, w20, w21, w22, w23, w24, w25, w36, w37, w39, w40, w38, w34, w35, w41, w42, w44, w45, w43, w46, w53, w55, w57, w58, w59, w61, illegal_instr_o, instr_o }
+  Comb.mk w0 w1 w2 w3 w4 w5 is_compressed_o w54 w51 w49 w52 w50 w47 w7 w30 w31 w32 w33 w8 w26 w27 w28 w29 w9 w48 w10 w11 w56 w12 w13 w14 w15 w16 w17 w18 w19 w20 w21 w22 w23 w24 w25 w36 w37 w39 w40 w38 w34 w35 w41 w42 w44 w45 w43 w46 w53 w55 w57 w58 w59 w61 illegal_instr_o instr_o
+
+/-- The module's output ports (some are plain wires, not combinational cells). -/
+structure Outputs where
+  instr_o : BitVec 32
+  is_compressed_o : BitVec 1
+  gets_expanded_o : BitVec 2
+  illegal_instr_o : BitVec 1
+deriving Repr
+
+/-- Output ports, given the current state and inputs. -/
+def outputs (s : State) (i : Input) : Outputs :=
+  let w := comb s i
+  Outputs.mk (w.instr_o) (w.is_compressed_o) (0#2) (w.illegal_instr_o)
 
 /-- One clock edge. -/
 def step (s : State) (i : Input) : State :=

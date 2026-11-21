@@ -110,10 +110,14 @@ HAVE_SV2V = bool(os.environ.get("SV2V") or shutil.which("sv2v") or Path("/opt/sv
 
 
 @pytest.mark.skipif(not (HAVE_SV2V and (IBEX / "rtl").is_dir()), reason="needs sv2v and the Ibex submodule")
-@pytest.mark.parametrize("top,params", [("ibex_alu", {}),
-                                        ("ibex_compressed_decoder", {"RV32ZC": 0, "BaseIsa": 0})])
-def test_ibex_blocks_match_yosys(top, params):
-    doc = frontend.netlist_json([str(IBEX / "rtl/ibex_pkg.sv"), str(IBEX / f"rtl/{top}.sv")], top, params,
+@pytest.mark.parametrize("top,params,extra", [
+    ("ibex_alu", {}, []),
+    ("ibex_compressed_decoder", {"RV32ZC": 0, "BaseIsa": 0}, []),
+    ("ibex_decoder", {"RV32M": 0, "RV32B": 0, "BaseIsa": 0}, ["rtl/ibex_cheriot_pkg.sv"]),
+])
+def test_ibex_blocks_match_yosys(top, params, extra):
+    files = [str(IBEX / "rtl/ibex_pkg.sv")] + [str(IBEX / e) for e in extra] + [str(IBEX / f"rtl/{top}.sv")]
+    doc = frontend.netlist_json(files, top, params,
                                 use_sv2v=True, defines=["SYNTHESIS"],
                                 includes=[str(IBEX / "vendor/lowrisc_ip/ip/prim/rtl"), str(IBEX / "rtl")])
     d = ir.build(doc["modules"][top], top)
