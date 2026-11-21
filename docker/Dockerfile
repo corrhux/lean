@@ -27,6 +27,7 @@ RUN python3 -m venv /opt/venv
 ENV PATH=/opt/venv/bin:$PATH
 COPY pyproject.toml README.md /tmp/pvs/
 COPY satlab /tmp/pvs/satlab
+COPY tools/sv2lean /tmp/pvs/tools/sv2lean
 RUN pip install --no-cache-dir "/tmp/pvs[dev]" && rm -rf /tmp/pvs
 
 WORKDIR /workspace

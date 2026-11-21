@@ -39,6 +39,15 @@ def Safe (c : Circuit I S) (P : S → Prop) : Prop :=
 def SafeUnder (c : Circuit I S) (A : S → I → Prop) (P : S → Prop) : Prop :=
   ∀ ins, (∀ n, A (c.run ins n) (ins n)) → ∀ n, P (c.run ins n)
 
+/-- Model-checker semantics of `assume`/`assert` when both may read inputs (immediate
+assertions in `always_comb`, as produced by `sv2lean`): at cycle `n`, `P` must hold
+whenever the assumptions held at every cycle up to and including `n`. This is the
+"prefix" reading that SymbiYosys and Jasper use. It is stronger than requiring the
+assumptions on the whole infinite trace, which would excuse a violation at cycle
+`n` because of an assumption failing later. -/
+def SafePrefix (c : Circuit I S) (A P : S → I → Prop) : Prop :=
+  ∀ ins n, (∀ m, m ≤ n → A (c.run ins m) (ins m)) → P (c.run ins n) (ins n)
+
 /-- What a BMC "bounded proof to depth `k`" establishes, which is a weaker theorem than `Safe`. -/
 def BoundedSafe (c : Circuit I S) (P : S → Prop) (k : Nat) : Prop :=
   ∀ ins n, n ≤ k → P (c.run ins n)

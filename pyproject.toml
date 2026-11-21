@@ -7,7 +7,7 @@ name = "proof-vs-search"
 version = "0.1.0"
 description = "Learning lab: Lean 4 theorem proving vs. SAT-based model checking for RTL"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
   "python-sat>=1.9.dev24",   # MiniSat, Glucose, CaDiCaL, Kissat, Lingeling, Maple* bindings
   "z3-solver>=4.12",
@@ -17,13 +17,16 @@ dependencies = [
 dev = ["pytest>=8"]
 # WebAssembly builds of Yosys + SymbiYosys; enough for smtbmc tasks.
 # ABC-based engines (abc pdr) need the native OSS CAD Suite instead.
-hdl = ["yowasp-yosys"]
+hdl = ["yowasp-yosys==0.71.0.0.post1285"]
 
 [project.scripts]
 satlab = "satlab.cli:main"
+sv2lean = "sv2lean.__main__:main"
+ftwin = "ftwin.__main__:main"
 
 [tool.setuptools.packages.find]
-include = ["satlab*"]
+where = [".", "tools"]
+include = ["satlab*", "sv2lean*", "ftwin*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

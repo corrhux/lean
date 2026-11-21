@@ -16,7 +16,9 @@ OpenTitan.
 | Milestone | State |
 |---|---|
 | M0 skeleton | Lake project (`lakefile.toml`, Lean 4.36.0), Python package, CI, Docker image and dev container are in place. `lake build` passes. |
-| M1 Lean core | `RtlProof/Core/Circuit.lean` (semantics) and `RtlProof/Meta/Induction.lean` (induction soundness) are written. k-induction soundness is still to do. |
+| M1 Lean core | Circuit semantics, model-checker assumption semantics (`SafePrefix`), and **proven** soundness of induction, k-induction and invariant-with-assumptions (`RtlProof/Meta`). Counter twin proven in Lean on the generated model. |
+| M2 sv2lean | **Working**: SystemVerilog → Yosys → Lean (`tools/sv2lean`). Differential-tested against Yosys's own semantics; mutation tests show the difftest catches injected bugs. |
+| `ftwin` | `ftwin run <design>`: SymbiYosys tasks and Lean theorems side by side (`tools/ftwin`). |
 | M1b Lean fluency | All 48 code blocks in [docs/LEAN_FLUENCY.md](docs/LEAN_FLUENCY.md) compile on Lean 4.36.0, and the 3 intentional failures fail (`tools/lean_blocks.py`, run in CI). |
 | M3 satlab | **Working and tested**: teaching DPLL/CDCL with traces, generators, solver zoo (including CaDiCaL and Kissat), DRUP proof checking. See [satlab/README.md](satlab/README.md). |
 | RTL | `rtl/counter`: BMC, k-induction, cover and bug tasks pass with SymbiYosys. See [rtl/counter/README.md](rtl/counter/README.md). |
@@ -27,6 +29,8 @@ OpenTitan.
 pip install -e ".[dev]" && pytest          # satlab
 satlab gen mul-miter --width 8 -o m8.cnf && satlab zoo m8.cnf
 lake build                                 # Lean library (needs elan)
+ftwin run counter                          # both sides of the counter twin
+sv2lean rtl/counter/counter.sv --top counter --difftest 10   # Lean model vs Yosys
 cd rtl/counter && sby -f counter.sby       # needs the OSS CAD Suite
 ```
 

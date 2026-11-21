@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install yowasp-yosys z3-solver
+      - run: pip install "yowasp-yosys==0.71.0.0.post1285" z3-solver
       - name: counter — bmc, prove, cover, bug (expected failure)
         working-directory: rtl/counter
         run: |
@@ -34,17 +34,30 @@ jobs:
           done
 
   lean:
-    name: lean (lake build)
+    name: lean (lake build, course code, sv2lean)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Install elan
         run: |
           curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
             | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - run: pip install -e ".[dev,hdl]"
       - run: lake build
-      - name: No sorry in the library
-        run: "! grep -rn --include='*.lean' -w sorry RtlProof"
+      - name: No sorry in the library (exercises excluded)
+        run: "! grep -rn --include='*.lean' --exclude='Exercise.lean' -w sorry RtlProof"
+      - name: Exercises compile (with their sorries)
+        run: for f in $(find RtlProof -name Exercise.lean); do lake env lean "$f"; done
       - name: Course code compiles (LEAN_FLUENCY.md)
         run: python3 tools/lean_blocks.py docs/LEAN_FLUENCY.md
+      - name: sv2lean + ftwin tests (difftests against Yosys, mutation tests, twin report)
+        run: pytest -q tests/sv2lean tests/ftwin
+      - name: Generated models are up to date
+        run: |
+          sv2lean rtl/counter/counter.sv --top counter --namespace Gen.Counter \
+            -o RtlProof/Generated/Counter.lean
+          git diff --exit-code RtlProof/Generated

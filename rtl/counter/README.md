@@ -50,7 +50,31 @@ running in parallel crashed with SIGBUS in testing.
 | `bug` (WRAP=10) | smtbmc z3 | FAIL as expected: `p_le_9` violated; VCD trace written |
 | `pdr` | abc pdr | needs the OSS CAD Suite (`yosys-abc`) |
 
-Compare with Lean (L14): there, the inductive step is a `bv_decide` call on a
-single transition, and the result is a theorem for every cycle count with no
-depth parameter. In the bug variant, `bv_decide` returns the induction
-counterexample `cnt = 9, en = 1` directly, rather than a 10-cycle trace from reset.
+## The Lean side
+
+`RtlProof/Generated/Counter.lean` is generated from `counter.sv` by `sv2lean`.
+`RtlProof/Examples/Counter/Solution.lean` proves `p_le_9` and `p_hold` on that
+model, for every cycle and every input sequence, under the same reset
+assumption. Each proof is an inductive invariant (the Lean counterpart of a
+helper assertion), with every obligation discharged by `bv_decide`.
+`Exercise.lean` is the same file with the proofs removed.
+
+Run both sides together:
+
+```sh
+ftwin run counter
+```
+
+```
+property   side  task/engine               verdict    depth  trusts / evidence
+p_le_9     MC    bmc: smtbmc z3            bounded    20     engine
+p_le_9     MC    bug: smtbmc z3            cex        11     CEX trace.vcd (expected)
+p_le_9     MC    prove: smtbmc z3          proven     4      engine
+p_le_9     Lean  Gen.Counter.p_le_9_holds  proved     ∞      kernel + bv_decide (native)
+```
+
+Run the same Lean proof against the buggy design (`sv2lean ... -P WRAP=10`)
+and the inductive step fails. `bv_decide` reports the induction counterexample
+`f_past_valid = 1, cnt = 9, rst = 0, en = 1`: a single transition, not a
+11-cycle trace from reset. It labels it "potentially spurious", for the same
+reason a Jasper induction counterexample may be unreachable. Here it is real.

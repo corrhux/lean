@@ -31,6 +31,27 @@ theorem induction_sound (c : Circuit I S) (P Inv : S → Prop)
     rw [run_succ]
     exact hstep _ _ ih
 
+/-- Induction with assumptions (the form used on `sv2lean` models): an invariant that
+holds initially and is preserved by every step *whose inputs satisfy the assumptions*,
+and that implies the property, proves the property under model-checker (prefix)
+semantics. In Jasper terms, `Inv` is the helper assertion that makes the proof go
+through. -/
+theorem safePrefix_of_inv (c : Circuit I S) (A P : S → I → Prop) (Inv : S → Prop)
+    (h0 : Inv c.init)
+    (hstep : ∀ s i, Inv s → A s i → Inv (c.step s i))
+    (hP : ∀ s i, Inv s → A s i → P s i) :
+    c.SafePrefix A P := by
+  intro ins n hA
+  have hInv : ∀ m, m ≤ n → Inv (c.run ins m) := by
+    intro m
+    induction m with
+    | zero => intro _; exact h0
+    | succ k ih =>
+      intro hk
+      rw [run_succ]
+      exact hstep _ _ (ih (by omega)) (hA k (by omega))
+  exact hP _ _ (hInv n (Nat.le_refl n)) (hA n (Nat.le_refl n))
+
 theorem bounded_of_safe (c : Circuit I S) (P : S → Prop) (k : Nat) (h : c.Safe P) :
     c.BoundedSafe P k :=
   fun ins n _ => h ins n
