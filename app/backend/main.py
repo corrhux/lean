@@ -279,7 +279,7 @@ def lean_check(req: LeanCheck) -> dict:
 
 
 DOCS = ["course/README.md", "docs/LEAN_FLUENCY.md", "docs/COURSE.md", "docs/CAPSTONE_PRIMER.md",
-        "docs/CAPSTONE_IBEX.md", "capstone/ibex/README.md", "satlab/README.md", "docs/SPEC.md",
+        "docs/CAPSTONE_IBEX.md", "capstone/ibex/README.md", "docs/CAPSTONE_EXAM_PREP.md", "capstone/exam/README.md", "satlab/README.md", "docs/SPEC.md",
         "docs/ARCHITECTURE.md", "docs/REFERENCES.md", "README.md"]
 
 
@@ -369,6 +369,38 @@ def tutor_stream(req: TutorRequest) -> StreamingResponse:
 
     return StreamingResponse(events(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache"})
+
+
+# ----------------------------------------------------------------------- Ibex exam
+EXAM_PARTS = {"MultDiv": "RtlProof/Exam/Ibex/MultDiv.lean", "LoadStore": "RtlProof/Exam/Ibex/LoadStore.lean"}
+
+
+@app.get("/api/exam")
+def exam_files() -> dict:
+    """Your two exam files and the items in each (statements in RtlProof/Exam/Ibex/Statements.lean)."""
+    from pvs_exam.__main__ import ITEMS
+    return {"parts": [{"name": n, "path": p, "text": (REPO / p).read_text()} for n, p in EXAM_PARTS.items()],
+            "items": [{"name": k, "part": v[0], "points": v[1], "title": v[2]} for k, v in ITEMS.items()]}
+
+
+class ExamSave(BaseModel):
+    part: str = Field(pattern=r"^(MultDiv|LoadStore)$")
+    text: str = Field(max_length=400_000)
+
+
+@app.post("/api/exam/save")
+def exam_save(req: ExamSave) -> dict:
+    """Save one of your exam files (the only files the app writes in the repository)."""
+    path = REPO / EXAM_PARTS[req.part]
+    path.write_text(req.text)
+    return {"saved": EXAM_PARTS[req.part], "bytes": len(req.text.encode())}
+
+
+@app.post("/api/exam/grade")
+def exam_grade() -> dict:
+    """`pvs-exam`: which statements the saved files prove, and with what."""
+    from pvs_exam.__main__ import grade
+    return grade()
 
 
 @app.get("/api/status")

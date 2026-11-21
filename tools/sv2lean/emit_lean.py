@@ -152,6 +152,15 @@ def cell_expr(d: Design, c: CombCell, ctx: Ctx) -> str:
         r = f"(BitVec.sshiftRight' {wide} {b})" if (t == "$sshr" and asg) else f"({wide} >>> {b})"
         return ext(r, mw, yw, False)
 
+    if t == "$shiftx":
+        # Variable bit/part select `a[b +: yw]`. Bits read past the end of `a` are x in
+        # Verilog; we accept the cell only when that cannot happen (every b in range), so
+        # the model never has to choose a value for x.
+        if bsg or (1 << bw) - 1 + yw > aw:
+            raise UnsupportedDesign(f"$shiftx that can read out of range ({c.src}): "
+                                    f"{aw}-bit value, {bw}-bit index, {yw}-bit result")
+        return f"(BitVec.setWidth {yw} ({a} >>> {b}))"
+
     raise UnsupportedDesign(f"no Lean semantics for {t} ({c.src})")
 
 

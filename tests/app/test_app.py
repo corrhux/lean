@@ -197,3 +197,31 @@ def test_tutor_stream_sse(monkeypatch):
     assert "my scratchpad: X" in sent and "why?" in sent
     assert all(t.to_dict().get("eager_input_streaming") for t in fake.kwargs["tools"])
     assert m._TUTOR.history[-1] == {"role": "assistant", "content": "It compiles."}
+
+
+# ----------------------------------------------------------------------- Ibex exam
+def test_exam_files_listed():
+    r = client.get("/api/exam").json()
+    assert [p["name"] for p in r["parts"]] == ["MultDiv", "LoadStore"]
+    assert sum(i["points"] for i in r["items"]) == 100
+
+
+def test_exam_save_only_writes_exam_files():
+    path = REPO / "RtlProof/Exam/Ibex/LoadStore.lean"
+    original = path.read_text()
+    try:
+        assert client.post("/api/exam/save", json={"part": "LoadStore", "text": original + "-- x\n"}).status_code == 200
+        assert path.read_text().endswith("-- x\n")
+    finally:
+        path.write_text(original)
+    assert client.post("/api/exam/save", json={"part": "../../etc", "text": "x"}).status_code == 422
+
+
+def test_app_does_not_serve_exam_solutions():
+    assert client.get("/api/file", params={"path": "capstone/exam/solutions/MultDiv.lean"}).status_code == 404
+
+
+@pytest.mark.skipif(not HAVE_LEAN, reason="needs Lean")
+def test_exam_grade_blank():
+    r = client.post("/api/exam/grade").json()
+    assert r["total"] == 100 and r["score"] == 0 and not r["tampered"]

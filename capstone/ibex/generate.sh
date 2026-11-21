@@ -6,7 +6,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 I=third_party/ibex
-COMMON=(--sv2v -D SYNTHESIS -I "$I/vendor/lowrisc_ip/ip/prim/rtl" -I "$I/rtl" "$I/rtl/ibex_pkg.sv")
+COMMON=(--sv2v -D SYNTHESIS -I "$I/vendor/lowrisc_ip/ip/prim/rtl" -I "$I/vendor/lowrisc_ip/dv/sv/dv_utils"
+        -I "$I/rtl" "$I/rtl/ibex_pkg.sv")
 EXTRA=()
 [ "${1:-}" = "--difftest" ] && EXTRA=(--difftest 6 --cycles 60)
 
@@ -25,3 +26,11 @@ sv2lean "${COMMON[@]}" "$I/rtl/ibex_cheriot_pkg.sv" "$I/rtl/ibex_decoder.sv" --t
 # Register file (flip-flops), plain RV32I: BaseIsa = RV32I, RV32E = 0, no dummy instructions
 sv2lean "${COMMON[@]}" "$I/rtl/ibex_cheriot_pkg.sv" "$I/rtl/ibex_register_file_ff.sv" --top ibex_register_file_ff \
   -P BaseIsa=0 -P RV32E=0 -P DummyInstructions=0 --namespace Gen.IbexRF -o RtlProof/Generated/IbexRF.lean "${EXTRA[@]}"
+
+# Exam blocks (capstone/exam). Load/store unit, plain RV32I (CHERIoT compiled out), no memory ECC
+sv2lean "${COMMON[@]}" "$I/rtl/ibex_cheriot_pkg.sv" "$I/rtl/ibex_load_store_unit.sv" --top ibex_load_store_unit \
+  -P BaseIsa=0 -P MemECC=0 --namespace Gen.IbexLSU -o RtlProof/Generated/IbexLSU.lean "${EXTRA[@]}"
+
+# Iterative multiplier/divider (the "slow" one, ibex_multdiv_slow): no parameters
+sv2lean "${COMMON[@]}" "$I/rtl/ibex_multdiv_slow.sv" --top ibex_multdiv_slow \
+  --namespace Gen.IbexMD -o RtlProof/Generated/IbexMD.lean "${EXTRA[@]}"

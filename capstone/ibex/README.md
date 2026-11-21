@@ -55,16 +55,22 @@ formal backends (so the Lean models agree with SymbiYosys on every input):
   inputs `undef_k`, so every proof has to hold whatever value the hardware
   produces there.
 
+## The rest of Ibex: the exam
+
+The load/store unit and the iterative multiplier/divider are **your exam**:
+[capstone/exam/README.md](../exam/README.md), prepared by chapters E5–E11 of
+[docs/CAPSTONE_EXAM_PREP.md](../../docs/CAPSTONE_EXAM_PREP.md). Both blocks are
+translated and difftested (`generate.sh` above); the statements are fixed, graded by
+`pvs-exam`, and proved by reference solutions that CI checks.
+
 ## Not done yet
 
 * **Track 1** (riscv-formal via RVFI; lowRISC's Sail-equivalence proof in
-  `third_party/ibex/dv/formal`) needs the native OSS CAD Suite with
-  yosys-slang, rIC3 and the Sail compiler. None of these run in the
-  WebAssembly toolchain used here; the dev container image installs the CAD
-  suite.
-* **More Track 2 blocks:** the load/store unit (byte lanes, sign extension,
-  misaligned splitting); `ibex_multdiv_slow` (needs a
-  sequential invariant).
+  `third_party/ibex/dv/formal`) needs Jasper, or the native OSS CAD Suite with
+  rIC3 and the Sail compiler, plus Nix and a large machine. It is the practical in
+  prep chapter E10, for your own machine; it has not been run here.
+* **The multiplier's result** for every operand (the exam's challenge) has no proof
+  yet; the statement is checked on 400 random cases.
 * **Covered by other parts of Ibex, not yet proven:** the `IMM_B_INCR_PC`
   immediate is 4 (or 2 after a compressed instruction) in `ibex_id_stage`;
   JALR's clearing of target bit 0 happens on the way to the fetch stage.

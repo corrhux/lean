@@ -99,3 +99,9 @@ third-party code is pulled as pinned submodules or installed packages.
 - Hunt, Swords, Davis et al., Centaur x86 verification with ACL2 (GL).
 - Harrison, *Handbook of Practical Logic and Automated Reasoning*, 2009.
 - MacKenzie, *Mechanizing Proof*, MIT Press 2001.
+
+## Processor verification (capstone exam, E10–E11)
+- Burch, Dill, *Automatic verification of pipelined microprocessor control*, CAV 1994 (the flushing refinement method).
+- lowRISC, *End-to-end formal verification of Ibex trace equivalence against the Sail model*: `third_party/ibex/dv/formal/README.md` (Jasper, or Yosys + rIC3).
+- Choi, Vijayaraghavan, Sherman, Chlipala, Arvind, *Kami: A Platform for High-Level Parametric Hardware Specification and Its Modular Verification*, ICFP 2017 (Coq).
+- Bourgeat, Pit-Claudel, Chlipala, Arvind, *The Essence of Bluespec: A Core Language for Rule-Based Hardware Design* (Kôika), PLDI 2020 (Coq).

@@ -16,6 +16,7 @@
     <button data-view="course" class="active">Course</button>
     <button data-view="twins">Twin labs</button>
     <button data-view="lean">Lean scratchpad</button>
+    <button data-view="exam">Ibex exam</button>
     <button data-view="sat">SAT lab</button>
     <button data-view="tutor">Tutor</button>
   </nav>
@@ -106,6 +107,26 @@
         <aside id="scratch-goals" class="goals"></aside>
       </div>
       <p id="scratch-status" class="muted"></p>
+    </section>
+
+    <section id="view-exam" class="view" hidden>
+      <p class="muted">Prove Ibex's multiplier/divider and load/store unit. Statements:
+        <code>RtlProof/Exam/Ibex/Statements.lean</code>; preparation: the course's
+        <a href="#" id="exam-prep">exam prep chapters (E5–E11)</a>. Saving writes your exam file;
+        grading runs <code>pvs-exam</code> on the saved files.</p>
+      <div class="row">
+        <select id="exam-part" aria-label="Exam part"></select>
+        <button id="exam-save">Save</button>
+        <button id="exam-grade" class="primary">Save and grade</button>
+        <span id="exam-note" class="muted"></span>
+      </div>
+      <div class="split">
+        <div><div id="exam-editor"></div><div id="exam-msgs" class="msgs"></div></div>
+        <aside id="exam-goals" class="goals"></aside>
+      </div>
+      <p id="exam-status" class="muted"></p>
+      <h2>Score</h2>
+      <div class="scroll"><table id="exam-score"><tbody><tr><td class="muted">Not graded yet.</td></tr></tbody></table></div>
     </section>
 
     <section id="view-sat" class="view" hidden>

@@ -295,6 +295,18 @@ small purpose-built ones:
 induction trace: Jasper's *undetermined*) from a real counterexample, and a Lean
 proof that **fails** (`failed`, with the error) from one that uses `sorry`.
 
+### 4.7 Ibex exam grader (`tools/pvs_exam`, `pvs-exam`)
+
+Statements live in `RtlProof/Exam/Ibex/Statements.lean` as `def X : Prop`; the
+learner's files prove `theorem X : Stmt.X`. The grader appends
+`example : Stmt.X := X` (the statement must match) and `#print axioms X` (only
+Lean's three axioms and `bv_decide`'s certificates score) to a copy of each file and
+compiles it; errors are attributed to items by line range. `Spec.lean`,
+`Statements.lean` and the models are hash-checked (`capstone/exam/protected.sha256`).
+CI grades the reference solutions (`capstone/exam/solutions/`, which the tutor and
+the app refuse to read) and requires 100/100, and runs `capstone/exam/simcheck.lean`
+for the open challenge.
+
 ## 5. CI design
 
 | Job | Steps |

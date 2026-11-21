@@ -226,10 +226,11 @@ function leanLive({ editor, key, msgsEl, goalsEl, statusEl, extra }) {
 let currentView = "course", workView = "lean";   // workView: where the tutor's context comes from
 function show(view) {
   currentView = view;
-  if (view === "twins" || view === "lean") workView = view;
+  if (view === "twins" || view === "lean" || view === "exam") workView = view;
   document.querySelectorAll(".view").forEach((v) => (v.hidden = v.id !== `view-${view}`));
   document.querySelectorAll("#nav button").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
   if (view === "lean" && scratch.stale) scratch.sync();
+  if (view === "exam") loadExam();
   if (view === "tutor") $("tutor-context-note").textContent = contextLabel();
 }
 $("nav").addEventListener("click", (e) => { if (e.target.dataset.view) show(e.target.dataset.view); });
@@ -521,6 +522,46 @@ const scratch = leanLive({ editor: scratchEditor, key: "scratch", msgsEl: $("scr
 const scratchChange = scratchEditor.onChange;
 scratchEditor.onChange = (v) => { store.set("pvs.scratch", v); scratchChange(v); };
 
+// ---------- Ibex exam ----------
+let exam = null, examPart = "MultDiv";
+const examEditor = makeEditor($("exam-editor"), { lang: "lean" });
+const examLive = leanLive({ editor: examEditor, key: "exam", msgsEl: $("exam-msgs"), goalsEl: $("exam-goals"),
+  statusEl: $("exam-status") });
+const examChange = examEditor.onChange;
+examEditor.onChange = (v) => { exam.texts[examPart] = v; $("exam-note").textContent = "unsaved changes"; examChange(v); };
+async function loadExam() {
+  if (exam) { if (examLive.stale) examLive.sync(); return; }
+  const r = await api("/api/exam");
+  exam = { items: r.items, paths: {}, texts: {} };
+  for (const p of r.parts) { exam.paths[p.name] = p.path; exam.texts[p.name] = p.text; }
+  $("exam-part").innerHTML = r.parts.map((p) => `<option value="${esc(p.name)}">${esc(p.path)}</option>`).join("");
+  examEditor.value = exam.texts[examPart];
+  examLive.sync();
+}
+$("exam-part").addEventListener("change", (e) => {
+  examPart = e.target.value; examEditor.value = exam.texts[examPart]; examLive.sync();
+});
+async function examSave() {
+  await api("/api/exam/save", { body: { part: examPart, text: exam.texts[examPart] } });
+  $("exam-note").textContent = `saved ${exam.paths[examPart]}`;
+}
+$("exam-save").addEventListener("click", () => examSave().catch((e) => { $("exam-note").textContent = e.message; }));
+$("exam-grade").addEventListener("click", async () => {
+  const btn = $("exam-grade"); btn.disabled = true;
+  try {
+    await examSave();
+    $("exam-note").textContent = "grading…";
+    const r = await api("/api/exam/grade", { method: "POST" });
+    $("exam-score").innerHTML = "<thead><tr><th>item</th><th>points</th><th>status</th><th>notes</th></tr></thead><tbody>" +
+      r.items.map((i) => `<tr><td>${esc(i.title)}</td><td class="num">${i.points ? `${i.score}/${i.points}` : "bonus"}</td>
+        <td class="v-${esc(i.status)}">${esc(i.status)}</td><td class="muted">${esc(i.detail || (i.status === "proved" ? "kernel + bv_decide" : ""))}</td></tr>`).join("") +
+      `</tbody>`;
+    $("exam-note").textContent = `score ${r.score} / ${r.total}` + (r.tampered.length ? ` · UNOFFICIAL: ${r.tampered.join(", ")} changed` : "");
+  } catch (e) { $("exam-note").textContent = e.message; }
+  btn.disabled = false;
+});
+$("exam-prep").addEventListener("click", (e) => { e.preventDefault(); show("course"); openDoc("docs/CAPSTONE_EXAM_PREP.md"); });
+
 // ---------- SAT lab ----------
 $("sat-run").addEventListener("click", async () => {
   const btn = $("sat-run"); btn.disabled = true; $("sat-note").textContent = "solving…";
@@ -545,6 +586,16 @@ function workingOn() {
         ...Object.entries(editedRtl()).map(([f, t]) => `My edited ${f}:\n\`\`\`systemverilog\n${t}\n\`\`\``),
         `My Lean solution (${twin.base.solution_path}):\n\`\`\`lean\n${twin.solution}\n\`\`\``,
         diags && `Lean messages:\n${diags}`, twinLean.goalText && `Goal at my cursor:\n${twinLean.goalText}`].filter(Boolean).join("\n\n"),
+    };
+  }
+  if (exam && workView === "exam") {
+    const diags = examLive.diagnostics.map((d) => `line ${d.line + 1} ${d.severity}: ${d.message}`).join("\n");
+    return {
+      label: `the Ibex exam (${exam.paths[examPart]})`, file: null,
+      text: [`I am working on the Ibex exam, file ${exam.paths[examPart]} (statements in RtlProof/Exam/Ibex/Statements.lean). ` +
+        "Teach; do not give me a complete proof unless the hint level is 5.",
+        `My file:\n\`\`\`lean\n${examEditor.value}\n\`\`\``, diags && `Lean messages:\n${diags}`,
+        examLive.goalText && `Goal at my cursor:\n${examLive.goalText}`].filter(Boolean).join("\n\n"),
     };
   }
   const diags = scratch.diagnostics.map((d) => `line ${d.line + 1} ${d.severity}: ${d.message}`).join("\n");

@@ -23,3 +23,6 @@ import RtlProof.RV32I.Ibex.LoadStoreJump
 import RtlProof.RV32I.Ibex.System
 import RtlProof.Generated.IbexRF
 import RtlProof.RV32I.Ibex.RegFile
+import RtlProof.Generated.IbexLSU
+import RtlProof.Generated.IbexMD
+import RtlProof.Exam.Ibex.Statements

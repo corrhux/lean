@@ -76,5 +76,13 @@ Read [docs/CAPSTONE_PRIMER.md](../docs/CAPSTONE_PRIMER.md) first, then
 | E1 Meet Ibex | CAPSTONE_IBEX.md §§ 1–3 | `capstone/ibex/generate.sh --difftest`: four Ibex blocks translated to Lean and checked against Yosys | `RtlProof/Generated/Ibex*.lean` |
 | E2 Track 1: model checking | CAPSTONE_IBEX.md § 4 Track 1 | needs the native OSS CAD Suite (dev container): riscv-formal and the Sail-equivalence flow | `third_party/ibex/formal/`, `third_party/ibex/dv/formal/` |
 | E3 Track 2: Lean on blocks | capstone/ibex/README.md | Read the spec (`RtlProof/RV32I/Spec.lean`, `Compressed.lean`), then each proof; break the spec on purpose and read `bv_decide`'s counterexample | `RtlProof/RV32I/Ibex/*.lean` |
-| E4 Track 3: pipeline slice | CAPSTONE_IBEX.md § 4 Track 3 | open research step: see "Not done yet" in the capstone README | — |
-| E5 Retrospective | CAPSTONE_PRIMER.md § 8 (coverage matrix) | Write your own comparison: what each method found, what it cost, what it trusts | — |
+| E4 Track 3: pipeline slice | CAPSTONE_IBEX.md § 4 Track 3 | open research step: see E11 and "Not done yet" in the capstone README | — |
+| E5 Reading a generated model | CAPSTONE_EXAM_PREP.md § E5 | Check the asynchronous-reset and packing examples; find `md_state_q_ff` and `md_state_q` in `IbexMD.lean` | `RtlProof/Generated/IbexMD.lean`, `IbexLSU.lean` |
+| E6 One-step rules and invariants | § E6 | Run the failing block, read the unreachable counterexample, then the fixed invariant | `docs/CAPSTONE_EXAM_PREP.md` |
+| E7 Counting cycles | § E7 | The countdown proof: one step in `BitVec`, the induction in `Nat` | " |
+| E8 Two runs | § E8 | The leaking and the fixed divider: read the counterexample to non-interference | " |
+| E9 Refinement and composition | § E9 | Memory-semantic store spec; the nibble adder; run the composed multiplier | `RtlProof/Exam/Ibex/Spec.lean` |
+| E10 Track 1 practical | § E10 | On your own machine with Jasper (or Yosys + rIC3): Ibex vs. Sail | `third_party/ibex/dv/formal/` |
+| E11 Track 3 outline | § E11 | (reading) | — |
+| **Exam** | [capstone/exam/README.md](../capstone/exam/README.md) | Prove M1–M4 and L1–L4 (100 points), optionally the challenge; grade with `pvs-exam` or the web app's Exam view | `RtlProof/Exam/Ibex/MultDiv.lean`, `LoadStore.lean` |
+| E12 Retrospective | CAPSTONE_PRIMER.md § 8 (coverage matrix) | Write your own comparison: what each method found, what it cost, what it trusts | — |
