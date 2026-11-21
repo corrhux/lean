@@ -54,7 +54,7 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
             | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - run: pip install -e ".[dev,hdl,tutor]"
+      - run: pip install -e ".[dev,hdl,tutor,app]"
       - name: Install sv2v (SystemVerilog to Verilog, for Ibex)
         run: |
           curl -sSfL -o /tmp/sv2v.zip https://github.com/zachjs/sv2v/releases/download/v0.0.13/sv2v-Linux.zip
@@ -68,8 +68,8 @@ jobs:
         run: for f in $(find RtlProof -name Exercise.lean); do lake env lean "$f"; done
       - name: Course code compiles (LEAN_FLUENCY.md)
         run: python3 tools/lean_blocks.py docs/LEAN_FLUENCY.md
-      - name: sv2lean, ftwin and tutor-tool tests (difftests, mutation tests, twin report)
-        run: pytest -q tests/sv2lean tests/ftwin tests/tutor
+      - name: sv2lean, ftwin, tutor-tool and web-app tests (difftests, mutation tests, twin report, API)
+        run: pytest -q tests/sv2lean tests/ftwin tests/tutor tests/app
       - name: Generated models are up to date
         run: |
           sv2lean rtl/counter/counter.sv --top counter --namespace Gen.Counter \

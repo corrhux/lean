@@ -61,7 +61,7 @@ lean/                                   (this repo)
 ├── satlab/          dpll.py cdcl.py heuristics/ gen/ zoo.py certs.py viewer/
 ├── tutor/           context.py tools.py prompts/ ladder.py client.py
 ├── course/          book.toml  src/SUMMARY.md  src/<part>/<chapter>.md
-├── app/             backend/ (FastAPI)  frontend/ (React + Vite)
+├── app/             backend/ (FastAPI)  frontend/ (static page; React + Vite planned)
 ├── third_party/     git submodules (pinned): ibex, riscv-formal, sail-riscv (optional)
 ├── .devcontainer/   devcontainer.json → docker/Dockerfile
 ├── docker/          Dockerfile, compose.yaml
@@ -277,6 +277,24 @@ UI (CLI / pane) ─► context.py: {module, file excerpt, goals (LSP $/lean/plai
 - **Frontend (React + Vite):** Monaco (SV + Lean), `@leanprover/infoview` (the
   component used by lean4web / VS Code), Surfer WASM in an iframe for VCDs,
   chart component, mdBook HTML embedded for the reader, tutor pane.
+
+**As built (first increment).** To stay usable offline with no Node toolchain,
+the first web app is smaller than the plan above:
+
+- `app/backend/main.py` (FastAPI) wraps the CLI tools directly, so the browser
+  and the command line always agree: `GET /api/designs`,
+  `POST /api/designs/{name}/run` (`ftwin run`), `GET /api/file` and
+  `GET /api/cex` (the tutor's sandboxed `read_file` and `cex_summary`),
+  `POST /api/lean/check` (the tutor's `check_lean`), `POST /api/satlab/zoo`,
+  `POST /api/tutor` (503 without `ANTHROPIC_API_KEY`), `GET /api/status`.
+  Requests are validated by pydantic (instance kind, size and timeout bounds);
+  binds to 127.0.0.1 unless told otherwise.
+- `app/frontend/` is one HTML page, one stylesheet and one script with no
+  libraries and no build step, including a small Markdown renderer for the
+  course reader.
+- Still to do from the plan: Monaco editors, a live Lean infoview over a Lean
+  server websocket, Surfer for waveforms (counterexamples show as per-step
+  tables), benchmark charts, and streaming tutor answers.
 
 ## 5. CI design
 

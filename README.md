@@ -17,14 +17,14 @@ OpenTitan.
 |---|---|
 | M0 skeleton | Lake project (`lakefile.toml`, Lean 4.36.0), Python package, CI, Docker image and dev container are in place. `lake build` passes. |
 | M1 Lean core | Circuit semantics, model-checker assumption semantics (`SafePrefix`), and **proven** soundness of induction, k-induction and invariant-with-assumptions (`RtlProof/Meta`). Counter twin proven in Lean on the generated model. |
+| M1b Lean fluency | All 48 code blocks in [docs/LEAN_FLUENCY.md](docs/LEAN_FLUENCY.md) compile on Lean 4.36.0, and the 3 intentional failures fail (`tools/lean_blocks.py`, run in CI). |
 | M2 sv2lean | **Working**: SystemVerilog → Yosys → Lean (`tools/sv2lean`). Differential-tested against Yosys's own semantics; mutation tests show the difftest catches injected bugs. |
 | `ftwin` | `ftwin run <design>`: SymbiYosys tasks and Lean theorems side by side (`tools/ftwin`). |
-| M6 tutor | `tutor ask/chat` (`tools/tutor`): Claude explains in Jasper terms on a 5-level hint ladder, with tools to compile Lean, look up course sections, read files, summarise counterexample waveforms and run twins. Tools are tested offline; the live API path needs `ANTHROPIC_API_KEY`. |
-| M5 Ibex capstone | **Started.** lowRISC Ibex pinned as a submodule. Track 2: Ibex's ALU (every RV32I operation and branch comparison), decoder (every OP/OP-IMM/branch/load/store/JAL/JALR instruction, including the addresses and jump targets the ALU computes) and compressed decoder (all 49,152 compressed encodings) are proven against a Lean RV32I/RV32C spec written from the ISA manual, and decoder + ALU are composed into instruction-level theorems. See [capstone/ibex/README.md](capstone/ibex/README.md). |
 | Twin labs | `rtl/counter`, `rtl/mul`, `rtl/fifo`, `rtl/arbiter`: each proven on both sides. Lean proves the **multiplier algorithm for every width**, the **FIFO control for every depth** and **round-robin fairness for every N**, then links each to the generated RTL. Measured scaling is in each design's README. `ftwin bench <design>` sweeps the parameter. |
-| M1b Lean fluency | All 48 code blocks in [docs/LEAN_FLUENCY.md](docs/LEAN_FLUENCY.md) compile on Lean 4.36.0, and the 3 intentional failures fail (`tools/lean_blocks.py`, run in CI). |
 | M3 satlab | **Working and tested**: teaching DPLL/CDCL with traces, generators, solver zoo (including CaDiCaL and Kissat), DRUP proof checking. See [satlab/README.md](satlab/README.md). |
-| RTL | `rtl/counter`: BMC, k-induction, cover and bug tasks pass with SymbiYosys. See [rtl/counter/README.md](rtl/counter/README.md). |
+| M5 Ibex capstone | **Track 2 done for the decode/execute blocks.** lowRISC Ibex pinned as a submodule and translated unmodified (via sv2v). Proven against a Lean RV32I/RV32C spec written from the ISA manual: the ALU (every RV32I operation and branch comparison), the decoder (every RV32I instruction class: OP, OP-IMM, branches, loads, stores, JAL, JALR, LUI, AUIPC, FENCE, FENCE.I, ECALL/EBREAK/MRET/WFI/DRET, Zicsr), the compressed decoder (all 49,152 encodings) and the register file; decoder + ALU composed into instruction-level theorems. **Not done:** Track 1 (riscv-formal / Sail comparison needs the native CAD suite), the LSU, multiply/divide, and Track 3 (pipeline refinement). See [capstone/ibex/README.md](capstone/ibex/README.md). |
+| M6 tutor | `tutor ask/chat` (`tools/tutor`): Claude explains in Jasper terms on a 5-level hint ladder, with tools to compile Lean, look up course sections, read files, summarise counterexample waveforms and run twins. Tools are tested offline; the live API path needs `ANTHROPIC_API_KEY`. |
+| M7 web app | `pvs-app` (`app/`): a local, offline browser front end over the same tools. Course reader, twin labs (run SymbiYosys and Lean side by side, per-step counterexample tables, the Lean trust base), a Lean scratchpad compiled in the project, the SAT solver zoo, and the tutor pane. **Not yet:** an in-browser SV/Lean editor with a live infoview, a waveform viewer (Surfer) and benchmark charts; `ftwin bench` prints those as tables. |
 
 ## Quick start
 
@@ -39,6 +39,17 @@ cd rtl/counter && sby -f counter.sby       # needs the OSS CAD Suite
 
 Or open the repo in the dev container (`.devcontainer/`), which installs Lean,
 the OSS CAD Suite and the Python tools.
+
+### Web app
+
+```sh
+pip install -e ".[app]" && lake build
+pvs-app                                    # http://127.0.0.1:8000 (localhost only)
+docker compose -f docker/compose.yaml up   # or: the same, in the course image
+```
+
+Everything works offline. The tutor pane is enabled only when
+`ANTHROPIC_API_KEY` is set on the machine running the app.
 
 ## The course
 

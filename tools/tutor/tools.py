@@ -13,7 +13,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 REPO = Path(__file__).resolve().parents[2]
-READABLE_DIRS = ("docs", "rtl", "RtlProof", "satlab", "tools", "tests")
+READABLE_DIRS = ("docs", "course", "capstone", "rtl", "RtlProof", "satlab", "tools", "tests")
+READABLE_FILES = ("README.md",)
 MAX_FILE_CHARS = 40_000
 MAX_OUTPUT_CHARS = 12_000
 
@@ -106,7 +107,8 @@ def course_lookup(query: str, max_sections: int = 3) -> str:
 def read_file(path: str) -> str:
     """Read a project file (docs, RTL, Lean, tools). Paths are repository-relative."""
     p = (REPO / path).resolve()
-    if REPO not in p.parents or p.relative_to(REPO).parts[0] not in READABLE_DIRS:
+    rel = p.relative_to(REPO).parts if REPO in p.parents else ()
+    if not rel or (rel[0] not in READABLE_DIRS and "/".join(rel) not in READABLE_FILES):
         return f"Refused: {path!r} is outside the readable project folders {READABLE_DIRS}."
     if not p.is_file():
         return f"No such file: {path}"
