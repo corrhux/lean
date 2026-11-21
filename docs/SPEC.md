@@ -174,6 +174,12 @@ optionally attempt the pipeline slice refinement.
 - FR-C1 Parts A–E as in COURSE.md, each chapter with objectives, reading,
   lab, Jasper mapping, and a "what changed vs. model checking" debrief.
 - FR-C2 Every Lean code block compiled in CI; every SV block linted/elaborated in CI.
+- FR-C5 Lean fluency module (Part C, [LEAN_FLUENCY.md](LEAN_FLUENCY.md)):
+  lessons L0–L17, each with a plain-language explanation, an RTL/Jasper
+  analogy, runnable code, traps and drills. Every drill has an
+  `Exercise.lean` / `Solution.lean` pair under `RtlProof/Fluency/`. Examples
+  meant to fail (such as `bv_decide` counterexamples) are wrapped so CI
+  expects the failure.
 - FR-C3 Capstone prerequisite block E0 (RISC-V for verifiers, Sail, Ibex
   tour, co-simulation, RVFI/riscv-formal, anatomy of the Ibex ⇔ Sail proof,
   coverage matrix) with runnable labs: Sail emulator, Ibex `simple_system` in
@@ -200,7 +206,8 @@ optionally attempt the pipeline slice refinement.
 | M1 | Lean core + meta-theory; Counter & Adder twins; `ftwin run` | k-induction soundness theorem proven; both twins report on both sides |
 | M2 | `sv2lean` + differential testing | All Part D designs translate; diff tests pass |
 | M3 | `satlab` + Course Part B (SAT, certificates, history) | CDCL trace viewer works; solver zoo table reproducible; LRAT demo checks |
-| M4 | Remaining examples, `ftwin bench`, Parts A, C, D | Multiplier scaling chart produced; all exercise solutions sorry-free |
+| M1b | Lean fluency module (Part C) compiled | All LEAN_FLUENCY.md code blocks compile on the pinned Lean; drills split into `RtlProof/Fluency/` exercise/solution files |
+| M4 | Remaining examples, `ftwin bench`, Parts A, D | Multiplier scaling chart produced; all exercise solutions sorry-free |
 | M5a | Capstone primer labs (course E0) | Sail emulator + Ibex simple_system run; cosim diff works; primer §7.3 questions answered from the pinned flow and the **(verify)** items in the primer resolved |
 | M5 | Ibex capstone (see CAPSTONE_IBEX.md) | Tracks 1 & 2 complete; Track 3 slice documented (proven or honestly scoped) |
 | M6 | Tutor CLI | Tutor answers on 10 scripted scenarios; all suggested code compiles |

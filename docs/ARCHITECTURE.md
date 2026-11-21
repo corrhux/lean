@@ -47,6 +47,7 @@ lean/                                   (this repo)
 │   ├── Meta/        BMC.lean, Induction.lean, KInduction.lean, Ranking.lean
 │   ├── Tactics/     Unroll.lean, RtlSimp.lean
 │   ├── Widgets/     Waveform.lean              (ProofWidgets4)
+│   ├── Fluency/     L01…L17 Exercise.lean / Solution.lean  (course Part C drills)
 │   ├── Generated/   *.lean                     (sv2lean output; committed, CI-regenerated)
 │   ├── Examples/    Counter/ Adder/ Multiplier/ Fifo/ Arbiter/ Handshake/ Pipe3/
 │   │                  each: Model.lean  Exercise.lean  Solution.lean  Param.lean (if parametric)

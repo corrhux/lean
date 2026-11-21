@@ -181,22 +181,23 @@ re-verified against the primary source while writing the chapter.
 
 ---
 
-## Part C — Lean foundations
+## Part C — Lean fluency
 
-### C1. Lean 4 for hardware engineers
-- Types, functions, `structure`, pattern matching; `BitVec n`, `Fin n`, `Bool`
-  vs `Prop`; `#eval` as simulation; `decide`. Lab: model a mux, adder, and
-  counter by hand; simulate with `#eval`.
+Full teaching text: **[LEAN_FLUENCY.md](LEAN_FLUENCY.md)**. It has 18 lessons
+(L0–L17); each gives the idea in plain terms, the closest RTL/Jasper
+equivalent, runnable code, common traps and drills (solutions in its
+Appendix C). Exercises live in `RtlProof/Fluency/L*.lean`.
 
-### C2. Propositions as types; the kernel
-- What a proof term is; tactics build terms; `theorem` vs `def`; the kernel as
-  the trusted base; axioms (`propext`, `Classical.choice`, `Quot.sound`,
-  `Lean.ofReduceBool`); `#print axioms`. Lab: prove `x + 0 = x` four ways;
-  inspect the term.
+| Block | Lessons | Outcome |
+|---|---|---|
+| C1. The language | L0 mental model · L1 expressions & functions · L2 definitions, `match`, recursion · L3 `structure`/`inductive` · L4 `BitVec` for hardware · L5 implicits, type classes, coercions | Read and write Lean programs; model RTL datapaths with exact widths |
+| C2. Logic and proof | L6 `Prop` vs `Bool` · L7 proofs are programs · L8 definitional equality (when `rfl` works) | State properties correctly; write small proofs without tactics |
+| C3. Tactics | L9 goals & core tactics · L10 `rw`/`simp` · L11 cases/existentials/contradiction · L12 induction & `generalizing` · L13 `decide`/`omega`/`bv_decide`/`grind` and their trust cost | Drive any proof interactively; delegate leaf goals to the right engine |
+| C4. Putting it together | L14 counter modelled and proven end to end · L15 organising lemmas · L16 reading errors & getting unstuck · L17 semantics under the hood (elaboration, universes, dependent types, axioms, recursors) | Prove a sequential invariant unaided; debug failing proofs |
 
-### C3. Tactics toolkit
-- `intro`, `cases`, `induction`, `simp`, `omega`, `decide`, `bv_decide`,
-  `grind`, `calc`; reading the infoview. Lab: tactic kata on BitVec facts.
+**Fluency check (exit criterion for Part C):** without notes, finish the L14
+drills and the L12 `runFrom_add` drill. Then prove a new invariant on a 3-state
+handshake FSM supplied in the lab, in under 30 minutes.
 
 ---
 
