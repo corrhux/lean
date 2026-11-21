@@ -114,6 +114,7 @@ HAVE_SV2V = bool(os.environ.get("SV2V") or shutil.which("sv2v") or Path("/opt/sv
     ("ibex_alu", {}, []),
     ("ibex_compressed_decoder", {"RV32ZC": 0, "BaseIsa": 0}, []),
     ("ibex_decoder", {"RV32M": 0, "RV32B": 0, "BaseIsa": 0}, ["rtl/ibex_cheriot_pkg.sv"]),
+    ("ibex_register_file_ff", {"BaseIsa": 0, "RV32E": 0, "DummyInstructions": 0}, ["rtl/ibex_cheriot_pkg.sv"]),
 ])
 def test_ibex_blocks_match_yosys(top, params, extra):
     files = [str(IBEX / "rtl/ibex_pkg.sv")] + [str(IBEX / e) for e in extra] + [str(IBEX / f"rtl/{top}.sv")]

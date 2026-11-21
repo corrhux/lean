@@ -19,6 +19,7 @@ Plan and background: [docs/CAPSTONE_IBEX.md](../../docs/CAPSTONE_IBEX.md) and
 | **decoder + ALU** | as above | both models | `op_executes`, `op_imm_executes`: for every legal OP / OP-IMM instruction and all register values, the ALU result the decoder sets up is the value the spec writes to rd | `RtlProof/RV32I/Ibex/Decoder.lean` |
 | **loads, stores, jumps** | as above | both models | LB/LH/LW/LBU/LHU and SB/SH/SW: legal encodings accepted (others rejected), memory request with the right size, write flag and sign extension, rs1/rs2/rd routing, and **the ALU computes the spec's address `rs1 + imm`**. JAL/JALR: first cycle computes the spec's target (`pc + immJ`, `rs1 + immI`) and requests the jump; second cycle computes the link value and writes rd. Branches: second cycle computes `pc + immB` when taken. | `RtlProof/RV32I/Ibex/LoadStoreJump.lean` |
 | **LUI, AUIPC, FENCE, SYSTEM** | as above | both models | LUI/AUIPC write `immU` / `pc + immU` (composed with the ALU); FENCE writes nothing; FENCE.I jumps to the next instruction and invalidates the I-cache; ECALL/EBREAK/MRET/WFI/DRET recognised exactly at their encodings (any other `funct3 = 000` word is illegal); Zicsr instructions access the right CSR with the spec's operation (CSRRS/CSRRC with a zero source only read), the right source (rs1 or `uimm`) and write the old value to rd | `RtlProof/RV32I/Ibex/System.lean` |
+| `ibex_register_file_ff` | `BaseIsa = RV32I`, no dummy instructions | `Gen.IbexRF`: 31 × 32-bit registers, 221 cells | for **every** register state: x0 reads 0 on both ports; a write to rd ≠ x0 is seen by the next read of rd and changes no other register; no write enable, no change; reset clears everything | `RtlProof/RV32I/Ibex/RegFile.lean` |
 | `ibex_compressed_decoder` | `RV32ZC = RV32Zca`, `BaseIsa = RV32I` | `Gen.IbexCDec`: 63 cells | for **all** 49,152 compressed encodings: illegal exactly when the spec says so, and every legal one expands to the spec's 32-bit instruction; 32-bit instructions pass through | `RtlProof/RV32I/Ibex/CDec.lean` |
 
 The spec (`RtlProof/RV32I/Spec.lean`, `RtlProof/RV32I/Compressed.lean`) is
@@ -62,7 +63,7 @@ formal backends (so the Lean models agree with SymbiYosys on every input):
   WebAssembly toolchain used here; the dev container image installs the CAD
   suite.
 * **More Track 2 blocks:** the load/store unit (byte lanes, sign extension,
-  misaligned splitting); the register file; `ibex_multdiv_slow` (needs a
+  misaligned splitting); `ibex_multdiv_slow` (needs a
   sequential invariant).
 * **Covered by other parts of Ibex, not yet proven:** the `IMM_B_INCR_PC`
   immediate is 4 (or 2 after a compressed instruction) in `ibex_id_stage`;

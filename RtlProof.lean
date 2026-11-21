@@ -21,3 +21,5 @@ import RtlProof.Generated.IbexDec
 import RtlProof.RV32I.Ibex.Decoder
 import RtlProof.RV32I.Ibex.LoadStoreJump
 import RtlProof.RV32I.Ibex.System
+import RtlProof.Generated.IbexRF
+import RtlProof.RV32I.Ibex.RegFile

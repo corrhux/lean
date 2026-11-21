@@ -21,3 +21,7 @@ sv2lean "${COMMON[@]}" "$I/rtl/ibex_compressed_decoder.sv" --top ibex_compressed
 # Decoder, plain RV32I: RV32M = RV32MNone, RV32B = RV32BNone, BaseIsa = BaseIsaRV32I
 sv2lean "${COMMON[@]}" "$I/rtl/ibex_cheriot_pkg.sv" "$I/rtl/ibex_decoder.sv" --top ibex_decoder \
   -P RV32M=0 -P RV32B=0 -P BaseIsa=0 --namespace Gen.IbexDec -o RtlProof/Generated/IbexDec.lean "${EXTRA[@]}"
+
+# Register file (flip-flops), plain RV32I: BaseIsa = RV32I, RV32E = 0, no dummy instructions
+sv2lean "${COMMON[@]}" "$I/rtl/ibex_cheriot_pkg.sv" "$I/rtl/ibex_register_file_ff.sv" --top ibex_register_file_ff \
+  -P BaseIsa=0 -P RV32E=0 -P DummyInstructions=0 --namespace Gen.IbexRF -o RtlProof/Generated/IbexRF.lean "${EXTRA[@]}"
