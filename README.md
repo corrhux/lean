@@ -40,6 +40,10 @@ cd rtl/counter && sby -f counter.sby       # needs the OSS CAD Suite
 Or open the repo in the dev container (`.devcontainer/`), which installs Lean,
 the OSS CAD Suite and the Python tools.
 
+## The course
+
+Start at **[course/README.md](course/README.md)**: every chapter with what to read, what to run and which files hold the exercise and solution.
+
 ## Documents
 
 | Document | Contents |
