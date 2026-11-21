@@ -146,7 +146,7 @@ re-verified against the primary source while writing the chapter.
        2011; Rocq `itauto`, Besson 2021; ACL2 verified LRAT checker, 2017;
        **Lean 4 `bv_decide`**: bit-blast in Lean, CaDiCaL produces LRAT, a
        verified Lean LRAT checker runs via compiled code — hence the
-       `Lean.ofReduceBool` axiom.)
+       per-theorem `…._native.bv_decide…` axiom in `#print axioms`.)
   - Trade-off table: speed vs. trusted base vs. proof size.
 - **Lab:** prove an ALU fact three ways in Lean: `decide` (kernel evaluation,
   tiny widths only), `bv_decide` (SAT + LRAT), manual `BitVec` lemmas. Compare

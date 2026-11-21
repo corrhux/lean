@@ -15,14 +15,11 @@ OpenTitan.
 
 | Milestone | State |
 |---|---|
-| M0 skeleton | Lake project (`lakefile.toml`, Lean 4.36.0), Python package, CI, Docker image and dev container are in place. **Lean files not yet compiled** (see below). |
+| M0 skeleton | Lake project (`lakefile.toml`, Lean 4.36.0), Python package, CI, Docker image and dev container are in place. `lake build` passes. |
 | M1 Lean core | `RtlProof/Core/Circuit.lean` (semantics) and `RtlProof/Meta/Induction.lean` (induction soundness) are written. k-induction soundness is still to do. |
+| M1b Lean fluency | All 48 code blocks in [docs/LEAN_FLUENCY.md](docs/LEAN_FLUENCY.md) compile on Lean 4.36.0, and the 3 intentional failures fail (`tools/lean_blocks.py`, run in CI). |
 | M3 satlab | **Working and tested**: teaching DPLL/CDCL with traces, generators, solver zoo (including CaDiCaL and Kissat), DRUP proof checking. See [satlab/README.md](satlab/README.md). |
 | RTL | `rtl/counter`: BMC, k-induction, cover and bug tasks pass with SymbiYosys. See [rtl/counter/README.md](rtl/counter/README.md). |
-
-The Lean files and the Lean course code have not been compiled yet, because
-the Lean toolchain could not be run in the cloud session that wrote them. CI's
-`lean` job, or `lake build` in the dev container, is the first check.
 
 ## Quick start
 
