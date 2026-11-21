@@ -19,3 +19,4 @@ import RtlProof.RV32I.Ibex.Alu
 import RtlProof.RV32I.Ibex.CDec
 import RtlProof.Generated.IbexDec
 import RtlProof.RV32I.Ibex.Decoder
+import RtlProof.RV32I.Ibex.LoadStoreJump
