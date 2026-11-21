@@ -19,6 +19,7 @@ OpenTitan.
 | M1 Lean core | Circuit semantics, model-checker assumption semantics (`SafePrefix`), and **proven** soundness of induction, k-induction and invariant-with-assumptions (`RtlProof/Meta`). Counter twin proven in Lean on the generated model. |
 | M2 sv2lean | **Working**: SystemVerilog → Yosys → Lean (`tools/sv2lean`). Differential-tested against Yosys's own semantics; mutation tests show the difftest catches injected bugs. |
 | `ftwin` | `ftwin run <design>`: SymbiYosys tasks and Lean theorems side by side (`tools/ftwin`). |
+| M6 tutor | `tutor ask/chat` (`tools/tutor`): Claude explains in Jasper terms on a 5-level hint ladder, with tools to compile Lean, look up course sections, read files, summarise counterexample waveforms and run twins. Tools are tested offline; the live API path needs `ANTHROPIC_API_KEY`. |
 | Twin labs | `rtl/counter`, `rtl/mul`, `rtl/fifo`, `rtl/arbiter`: each proven on both sides. Lean proves the **multiplier algorithm for every width**, the **FIFO control for every depth** and **round-robin fairness for every N**, then links each to the generated RTL. Measured scaling is in each design's README. `ftwin bench <design>` sweeps the parameter. |
 | M1b Lean fluency | All 48 code blocks in [docs/LEAN_FLUENCY.md](docs/LEAN_FLUENCY.md) compile on Lean 4.36.0, and the 3 intentional failures fail (`tools/lean_blocks.py`, run in CI). |
 | M3 satlab | **Working and tested**: teaching DPLL/CDCL with traces, generators, solver zoo (including CaDiCaL and Kissat), DRUP proof checking. See [satlab/README.md](satlab/README.md). |

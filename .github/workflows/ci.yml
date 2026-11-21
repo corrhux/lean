@@ -52,7 +52,7 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
             | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - run: pip install -e ".[dev,hdl]"
+      - run: pip install -e ".[dev,hdl,tutor]"
       - run: lake build
       - name: No sorry in the library (exercises excluded)
         run: "! grep -rn --include='*.lean' --exclude='Exercise.lean' -w sorry RtlProof"
@@ -60,8 +60,8 @@ jobs:
         run: for f in $(find RtlProof -name Exercise.lean); do lake env lean "$f"; done
       - name: Course code compiles (LEAN_FLUENCY.md)
         run: python3 tools/lean_blocks.py docs/LEAN_FLUENCY.md
-      - name: sv2lean + ftwin tests (difftests against Yosys, mutation tests, twin report)
-        run: pytest -q tests/sv2lean tests/ftwin
+      - name: sv2lean, ftwin and tutor-tool tests (difftests, mutation tests, twin report)
+        run: pytest -q tests/sv2lean tests/ftwin tests/tutor
       - name: Generated models are up to date
         run: |
           sv2lean rtl/counter/counter.sv --top counter --namespace Gen.Counter \

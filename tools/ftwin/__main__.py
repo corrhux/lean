@@ -270,6 +270,11 @@ def main(argv=None) -> int:
     b.add_argument("--timeout", type=float, default=300)
     b.add_argument("--csv")
     b.set_defaults(fn=cmd_bench)
+    sub.add_parser("tutor", help="ask the AI tutor (same as the `tutor` command)", add_help=False)
+    argv = sys.argv[1:] if argv is None else argv
+    if argv and argv[0] == "tutor":
+        from tutor.__main__ import main as tutor_main
+        return tutor_main(argv[1:])
     a = ap.parse_args(argv)
     return a.fn(a)
 
