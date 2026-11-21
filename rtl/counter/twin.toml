@@ -1,0 +1,17 @@
+# Twin-lab description read by `ftwin run counter`.
+top = "counter"
+files = ["counter.sv"]
+
+[sby]
+file = "counter.sby"
+tasks = ["bmc", "prove", "cover", "bug"]   # `pdr` needs the native OSS CAD Suite (yosys-abc)
+
+[lean]
+namespace = "Gen.Counter"
+generated = "RtlProof/Generated/Counter.lean"
+module = "RtlProof.Examples.Counter.Solution"
+
+# SVA label -> Lean theorem proving it
+[lean.theorems]
+p_le_9 = "Gen.Counter.p_le_9_holds"
+p_hold = "Gen.Counter.p_hold_holds"

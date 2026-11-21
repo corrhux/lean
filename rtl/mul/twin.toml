@@ -1,0 +1,23 @@
+top = "mul"
+files = ["mul.sv"]
+
+[sby]
+file = "mul.sby"
+tasks = ["w4", "w8"]          # w12 takes ~25 s with Z3; run it explicitly or via `ftwin bench`
+
+[lean]
+namespace = "Gen.Mul8"
+generated = "RtlProof/Generated/Mul8.lean"
+module = "RtlProof.Examples.Mul.Solution"
+
+[lean.theorems]
+p_mul = "Gen.Mul8.p_mul_holds"
+
+# `ftwin bench mul` sweeps this parameter with a 1-step BMC per value.
+[bench]
+param = "W"
+values = [4, 6, 8, 10, 12]
+engine = "smtbmc z3"
+depth = 1
+# A Lean theorem that covers every value at once, shown next to the sweep.
+all_values_theorem = "RtlProof.Mul.acc_eq_mul"

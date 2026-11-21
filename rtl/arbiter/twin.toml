@@ -1,0 +1,26 @@
+top = "arbiter"
+files = ["arbiter.sv"]
+
+[sby]
+file = "arbiter.sby"
+tasks = ["bmc", "prove", "cover"]
+
+[lean]
+namespace = "Gen.Arbiter4"
+generated = "RtlProof/Generated/Arbiter4.lean"
+module = "RtlProof.Examples.Arbiter.Solution"
+
+[lean.theorems]
+p_onehot = "Gen.Arbiter4.p_onehot_holds"
+p_valid = "Gen.Arbiter4.p_valid_holds"
+p_work = "Gen.Arbiter4.p_work_holds"
+p_fair = "Gen.Arbiter4.p_fair_holds"
+
+# `ftwin bench arbiter`: k-induction per N = 2^K vs one all-N theorem
+[bench]
+param = "K"
+values = [1, 2, 3, 4]
+engine = "smtbmc z3"
+mode = "prove"
+depth = 4
+all_values_theorem = "RtlProof.Arbiter.rr_contract"

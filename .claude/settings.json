@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sh *elan-init.sh*)",
+      "Bash(lake *)",
+      "Bash(lean *)",
+      "Bash(~/.elan/bin/*)"
+    ]
+  }
+}

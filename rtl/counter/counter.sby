@@ -1,0 +1,39 @@
+# SymbiYosys tasks for the BCD counter.
+#   bmc      bounded check to depth 20            (Jasper: engine K / Bm)
+#   prove    unbounded proof by k-induction       (Jasper: engine N/Hp-style induction)
+#   pdr      unbounded proof by IC3/PDR           (Jasper: engines AM/AD/N — PDR family)
+#   cover    reachability of cnt == 9             (Jasper: cover property)
+#   bug      WRAP=10 injected; expect a CEX at depth 11
+[tasks]
+bmc
+prove
+pdr
+cover
+bug
+
+[options]
+bmc:   mode bmc
+bmc:   depth 20
+prove: mode prove
+prove: depth 4
+pdr:   mode prove
+cover: mode cover
+cover: depth 20
+bug:   mode bmc
+bug:   depth 20
+bug:   expect fail
+
+[engines]
+bmc:   smtbmc z3
+prove: smtbmc z3
+pdr:   abc pdr
+cover: smtbmc z3
+bug:   smtbmc z3
+
+[script]
+read -formal counter.sv
+bug: chparam -set WRAP 10 counter
+prep -top counter
+
+[files]
+counter.sv

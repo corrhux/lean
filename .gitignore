@@ -1,0 +1,25 @@
+# Lean / Lake
+.lake/
+lake-packages/
+
+# Python
+__pycache__/
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+build/
+dist/
+
+# Formal tool outputs
+rtl/**/counter_*/
+rtl/**/*_bmc/
+rtl/**/*_prove/
+rtl/**/*_pdr/
+rtl/**/*_cover/
+rtl/**/*_bug/
+out/
+*.vcd
+*.jsonl
+*.drup
+build/

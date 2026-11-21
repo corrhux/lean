@@ -1,0 +1,23 @@
+# Combinational equivalence check p == a * b at several widths.
+# Jasper equivalent: assert property (p == a * b); prove with a SAT engine at each W.
+[tasks]
+w4
+w8
+w12
+
+[options]
+mode bmc
+depth 1
+
+[engines]
+smtbmc z3
+
+[script]
+read -formal mul.sv
+w4:  chparam -set W 4 mul
+w8:  chparam -set W 8 mul
+w12: chparam -set W 12 mul
+prep -top mul
+
+[files]
+mul.sv

@@ -1,0 +1,25 @@
+top = "fifo"
+files = ["fifo.sv"]
+
+[sby]
+file = "fifo.sby"
+tasks = ["bmc", "prove", "cover"]
+
+[lean]
+namespace = "Gen.Fifo4"
+generated = "RtlProof/Generated/Fifo4.lean"
+module = "RtlProof.Examples.Fifo.Solution"
+
+[lean.theorems]
+p_count_le = "Gen.Fifo4.p_count_le_holds"
+p_ptrs = "Gen.Fifo4.p_ptrs_holds"
+p_not_full_and_empty = "Gen.Fifo4.p_not_full_and_empty_holds"
+
+# `ftwin bench fifo`: k-induction proof per depth vs one all-depths theorem
+[bench]
+param = "AW"
+values = [1, 2, 3, 4, 5]
+engine = "smtbmc z3"
+mode = "prove"
+depth = 4
+all_values_theorem = "RtlProof.Fifo.inv_step"

@@ -1,0 +1,8 @@
+name = "proof-vs-search"
+defaultTargets = ["RtlProof"]
+
+[leanOptions]
+autoImplicit = false
+
+[[lean_lib]]
+name = "RtlProof"

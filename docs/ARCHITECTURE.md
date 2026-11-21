@@ -209,13 +209,14 @@ Normalised result (one per side per run):
   "time_s": 3.41,
   "cex_vcd": "out/fifo/p_no_overflow.vcd",
   "lean": {"goals": [], "axioms": ["propext", "Classical.choice", "Quot.sound",
-                                   "Lean.ofReduceBool"]},
+                                   "p_no_overflow._native.bv_decide.ax_1_5"]},
   "log": "out/fifo/abc_pdr.log"
 }
 ```
 
-`axioms` is surfaced deliberately: `Lean.ofReduceBool` appears exactly when a
-proof relied on `bv_decide`/`native_decide`, which is the course's concrete
+`axioms` is surfaced deliberately: an axiom whose name contains `._native.`
+appears exactly when a proof relied on `bv_decide`/`native_decide` (older Lean
+versions showed `Lean.ofReduceBool` instead; verified on 4.36.0), which is the course's concrete
 handle on "what you are trusting".
 
 Runners: `sby.py` (generates per-engine `.sby` from a template + design

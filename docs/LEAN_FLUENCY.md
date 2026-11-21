@@ -6,10 +6,10 @@ Lean 4 proofs fluently enough to do Parts D and E without looking things up
 every line.
 
 Target version: **Lean 4.36** (core Lean only, no Mathlib).
-**Code status:** written for this version but **not yet compiled**; every block
-will be checked by CI (SPEC FR-C2) and moved into
-`RtlProof/Fluency/L*.lean` exercise/solution files. Expect small fixes when
-that happens.
+**Code status:** every block compiles on Lean 4.36.0. CI checks this on
+every push with `python tools/lean_blocks.py docs/LEAN_FLUENCY.md`. Blocks
+marked ```` ```lean fails```` are teaching counterexamples, and CI checks that
+they *do* fail. Printed outputs shown in comments are Lean 4.36.0's.
 
 ---
 
@@ -23,6 +23,13 @@ Each lesson has the same parts:
 - **What you'll see** — what the editor's infoview shows.
 - **Traps** — the mistakes everyone makes.
 - **Drill** — short exercises (solutions in Appendix C).
+
+Start every practice file with this line. It enables `bv_decide`, the SAT
+tactic used from L13 onwards:
+
+```lean
+import Std.Tactic.BVDecide
+```
 
 Work in VS Code with the official Lean 4 extension. The **infoview** (right
 pane) is the most important tool you have: it shows values, types, and — in
@@ -306,24 +313,24 @@ width mismatches are type errors, not lint warnings. Arithmetic wraps modulo
 ```lean
 #check (5#8 : BitVec 8)       -- literal: value 5, width 8
 #check 0xFF#8
-#eval 200#8 + 100#8           -- 44  (300 mod 256)
-#eval (0#8) - 1#8             -- 255
+#eval 200#8 + 100#8           -- 0x2c#8   = 44 = 300 mod 256
+#eval (0#8) - 1#8             -- 0xff#8   = 255
 #eval (5#8).toNat             -- 5   as an unbounded Nat
-#eval BitVec.ofNat 8 300      -- 44
+#eval BitVec.ofNat 8 300      -- 0x2c#8
 
 -- bitwise
-#eval 0b1100#4 &&& 0b1010#4   -- 0b1000
-#eval 0b1100#4 ||| 0b1010#4   -- 0b1110
-#eval 0b1100#4 ^^^ 0b1010#4   -- 0b0110
-#eval ~~~0b1100#4             -- 0b0011
-#eval 0b0001#4 <<< 2          -- 0b0100
-#eval 0b1000#4 >>> 3          -- 0b0001   (logical shift)
+#eval 0b1100#4 &&& 0b1010#4   -- 0x8#4    (0b1000)
+#eval 0b1100#4 ||| 0b1010#4   -- 0xe#4    (0b1110)
+#eval 0b1100#4 ^^^ 0b1010#4   -- 0x6#4    (0b0110)
+#eval ~~~0b1100#4             -- 0x3#4    (0b0011)
+#eval 0b0001#4 <<< 2          -- 0x4#4    (0b0100)
+#eval 0b1000#4 >>> 3          -- 0x1#4    (0b0001, logical shift)
 
 -- slicing, concatenation, extension
-#eval (0xAB#8).extractLsb 7 4           -- upper nibble: 0xA, width 4
-#eval (0xA#4) ++ (0xB#4)                -- 0xAB, width 8
-#eval (0x80#8).signExtend 16            -- 0xFF80
-#eval (0x80#8).zeroExtend 16            -- 0x0080
+#eval (0xAB#8).extractLsb 7 4           -- 0xa#4    upper nibble, width 4
+#eval (0xA#4) ++ (0xB#4)                -- 0xab#8
+#eval (0x80#8).signExtend 16            -- 0xff80#16
+#eval (0x80#8).zeroExtend 16            -- 0x0080#16
 #eval (0x80#8).getLsbD 7                -- true   (bit 7)
 
 -- comparisons (Bool-valued)
@@ -332,7 +339,7 @@ width mismatches are type errors, not lint warnings. Arithmetic wraps modulo
 ```
 
 (The exact printed format of `#eval` on `BitVec` varies between versions —
-hex or decimal; the *values* above are what matter.)
+Lean 4.36 prints `#eval` results in hex, e.g. `0x2c#8`; `#check` shows decimal, e.g. `5#8`.)
 
 **Width arithmetic is checked.** `(x : BitVec 4) ++ (y : BitVec 4)` has type
 `BitVec (4 + 4)`, which Lean knows equals `BitVec 8`. If you write a function
@@ -528,9 +535,26 @@ Computation rules (simplified):
 ```lean
 example : double 3 = 6 := rfl             -- computes to 6 = 6
 example (n : Nat) : n + 0 = n := rfl      -- Nat.add recurses on the 2nd arg: n + 0 ↦ n
-example (n : Nat) : 0 + n = n := rfl      -- ✗ FAILS: 0 + n is stuck, n is unknown
 example (n : Nat) : 0 + n = n := by omega -- needs real reasoning (or Nat.zero_add)
 ```
+
+```lean fails
+example (n : Nat) : 0 + n = n := rfl      -- ✗ FAILS: 0 + n is stuck, n is unknown
+```
+
+What Lean says for the failing one:
+
+```
+Type mismatch
+  rfl
+has type
+  ?m.9 = ?m.9
+but is expected to have type
+  0 + n = n
+```
+
+Read it as: "`rfl` proves `a = a`, but I couldn't compute `0 + n` and `n`
+into the same thing."
 
 The third example is the single most instructive failure in Lean: `n + 0`
 reduces because the definition of `+` pattern-matches on its **second**
@@ -848,10 +872,10 @@ Each has a different power, speed, and **trust** cost.
 |---|---|---|---|
 | `rfl` | equalities that compute | kernel evaluation | kernel only |
 | `decide` | closed, finite, decidable props (small!) | kernel evaluates the `Decidable` instance | kernel only |
-| `native_decide` | same, bigger | compiles and runs native code | + compiler (`Lean.ofReduceBool`) |
+| `native_decide` | same, bigger | compiles and runs native code | + compiler (a `…_native…` axiom per theorem) |
 | `omega` | linear arithmetic over `Nat`/`Int` (`+`, `-`, constant `*`, `/`/`%` by constants, `<`, `≤`, `=`, `∧∨¬`) | Presburger decision procedure, produces a kernel proof | kernel only |
 | `simp` / `simp_all` | rewriting to `True` | lemma database | kernel only |
-| `bv_decide` | `BitVec`/`Bool` goals: arithmetic, bitwise, shifts, comparisons, `if` | **bit-blast to SAT, run CaDiCaL, check LRAT certificate** with a verified checker | + `Lean.ofReduceBool` |
+| `bv_decide` | `BitVec`/`Bool` goals: arithmetic, bitwise, shifts, comparisons, `if` | **bit-blast to SAT, run CaDiCaL, check LRAT certificate** with a verified checker | + compiler (a `…_native…` axiom per theorem) |
 | `grind` | mixed reasoning: congruence closure, arithmetic, case splits, E-matching on lemmas | SMT-solver-style search inside Lean, kernel-checked | kernel only |
 
 ```lean
@@ -864,13 +888,16 @@ example (x y : BitVec 32) : (x ^^^ y) ^^^ y = x := by bv_decide
 example (a b : BitVec 32) : a - b = a + (~~~b + 1#32) := by bv_decide
 
 theorem xor_cancel (x y : BitVec 32) : (x ^^^ y) ^^^ y = x := by bv_decide
-#print axioms xor_cancel   -- lists Lean.ofReduceBool: the SAT certificate check ran as compiled code
+#print axioms xor_cancel
+-- 'xor_cancel' depends on axioms:
+--   [propext, Classical.choice, Quot.sound, xor_cancel._native.bv_decide.ax_1_5]
+-- The last one records that the LRAT check ran as compiled native code.
 ```
 
 When `bv_decide` fails it gives a **counterexample** — values for the
 variables, just like a CEX trace:
 
-```lean
+```lean fails
 example (x : BitVec 8) : x + 1#8 > x := by bv_decide
 -- fails: counterexample x = 255 (wrap-around)
 ```
@@ -889,8 +916,8 @@ is a checked proof, not a verdict. (Course Part B6 explains the
 SAT-in-a-prover design.)
 
 **Traps.**
-- `decide` refuses goals that mention local variables (it reports that the
-  goal contains free variables) and gets stuck on anything it cannot fully
+- `decide` refuses goals that mention local variables ("Expected type must
+  not contain free variables"; the hint suggests `decide +revert`) and gets stuck on anything it cannot fully
   evaluate. First make the goal closed (e.g. `show 0#4 ≤ 9#4`). On large
   finite domains it's impractically slow — use `bv_decide`.
 - `omega` doesn't do non-linear arithmetic (`x * y` with both variables). It
@@ -937,7 +964,16 @@ def run (ins : Nat → Bool) : Nat → BitVec 4
 `ins : Nat → Bool` is "the value of input `en` at every cycle" — an arbitrary
 input stream, like a free input in Jasper.
 
-### 2. The property
+### 2. The step lemma (the inductive step, delegated to SAT)
+
+```lean
+/-- From any state with cnt ≤ 9, one clock edge keeps cnt ≤ 9. -/
+theorem next_le_9 (c : BitVec 4) (en : Bool) (h : c ≤ 9#4) : next c en ≤ 9#4 := by
+  unfold next
+  bv_decide
+```
+
+### 3. The property
 
 ```lean
 /-- The assertion: holds at every cycle, for every input stream. -/
@@ -948,18 +984,13 @@ theorem cnt_le_9 (ins : Nat → Bool) (n : Nat) : run ins n ≤ 9#4 := by
     decide                              -- closed goal: evaluate it
   | succ k ih =>
     show next (run ins k) (ins k) ≤ 9#4 -- unfold one step (definitional)
-    exact next_le_9 _ _ ih              -- the step lemma below
+    exact next_le_9 _ _ ih              -- the step lemma above
+
+end Bcd
 ```
 
-### 3. The step lemma (the inductive step, delegated to SAT)
-
-```lean
-theorem next_le_9 (c : BitVec 4) (en : Bool) (h : c ≤ 9#4) : next c en ≤ 9#4 := by
-  unfold next
-  bv_decide
-```
-
-(Put `next_le_9` *before* `cnt_le_9` in the file — Lean reads top to bottom.)
+The step lemma comes first because Lean reads a file top to bottom: a
+name must be defined before it is used.
 
 ### What just happened, in Jasper terms
 
@@ -1115,8 +1146,10 @@ when compiling code, and why `Prop` behaves differently from `Bool`.
 ### 17.6 Axioms
 Core Lean's logic adds three axioms: `propext` (equivalent props are equal),
 `Quot.sound` (quotients), and `Classical.choice` (gives the law of excluded
-middle). Plus, if you use `native_decide`/`bv_decide`, `Lean.ofReduceBool`
-(trust the compiler's evaluation). `#print axioms` lists exactly which a
+middle). Plus, if you use `native_decide` or `bv_decide`, an auxiliary axiom named
+`<theorem>._native.…` (trust the compiler's evaluation; older Lean versions
+showed `Lean.ofReduceBool` instead). By contrast, `decide` and `omega` add
+nothing beyond the kernel: `#print axioms` shows none, or only `propext`/`Quot.sound`. `#print axioms` lists exactly which a
 theorem depends on — the most precise "trust base" report you'll ever get
 from a verification tool.
 
@@ -1256,7 +1289,7 @@ example : ∃ x : BitVec 4, x + 1#4 = 0#4 := ⟨15#4, by decide⟩
 
 **L8.** (a) works (`sumTo 3` computes to 6). (b) works only after splitting:
 `if b then 1 else 1` is stuck on unknown `b` — use `by cases b <;> rfl`.
-(c) likely fails by `rfl` (BitVec addition is defined via `Nat` arithmetic
+(c) fails by `rfl` (BitVec addition is defined via `Nat` arithmetic
 modulo 2ⁿ, which gets stuck on a variable); use `by simp` or `by bv_decide`.
 
 **L9.**
@@ -1321,12 +1354,17 @@ theorem runFrom_add (step : Nat → Nat) (a b : Nat) :
 example : ∀ x : BitVec 16, x &&& 0#16 = 0#16 := by intro x; bv_decide
 example (n : Nat) (h : n % 4 = 3) : n % 2 = 1 := by omega
 example (x : BitVec 8) : x.slt 0#8 = x.getLsbD 7 := by bv_decide
+```
+
+```lean fails
 example (x : BitVec 8) : x * 3#8 ≠ 1#8 := by bv_decide
 -- fails with counterexample x = 171 (3 * 171 = 513 = 2*256 + 1)
 ```
 
 **L14.**
 ```lean
+namespace Bcd
+
 theorem cnt_ne_10 (ins : Nat → Bool) (n : Nat) : run ins n ≠ 10#4 := by
   have h := cnt_le_9 ins n
   bv_decide        -- from c ≤ 9 conclude c ≠ 10 (treats `run ins n` as an atom)
@@ -1336,6 +1374,8 @@ theorem hold (ins : Nat → Bool) (n : Nat) (h : ins n = false) :
   show next (run ins n) (ins n) = run ins n
   rw [h]
   simp [next]
+
+end Bcd
 ```
 (b) Wrapping at 10 lets `cnt` reach 10: `cnt_le_9`'s step lemma fails;
 `bv_decide` reports `c = 9, en = true` (9 + 1 = 10 > 9).
