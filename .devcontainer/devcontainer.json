@@ -1,0 +1,19 @@
+{
+  "name": "proof-vs-search",
+  "build": {
+    "dockerfile": "../docker/Dockerfile",
+    "context": ".."
+  },
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+  "postCreateCommand": "pip install -e '.[dev]' && lake build",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "leanprover.lean4",
+        "ms-python.python",
+        "mshr-h.veriloghdl"
+      ]
+    }
+  }
+}

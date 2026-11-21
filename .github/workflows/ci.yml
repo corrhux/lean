@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python:
+    name: satlab (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+
+  rtl:
+    name: rtl (SymbiYosys, WebAssembly toolchain)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install yowasp-yosys z3-solver
+      - name: counter — bmc, prove, cover, bug (expected failure)
+        working-directory: rtl/counter
+        run: |
+          for t in bmc prove cover bug; do
+            yowasp-sby -f --yosys yowasp-yosys --smtbmc yowasp-yosys-smtbmc \
+              --witness yowasp-yosys-witness counter.sby "$t"
+          done
+
+  lean:
+    name: lean (lake build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - run: lake build
+      - name: No sorry in the library
+        run: "! grep -rn --include='*.lean' -w sorry RtlProof"
