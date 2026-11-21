@@ -24,6 +24,10 @@ def main(argv=None) -> int:
     ap.add_argument("--difftest", type=int, metavar="SEEDS",
                     help="compare against Yosys on this many random runs")
     ap.add_argument("--cycles", type=int, default=30)
+    ap.add_argument("--sv2v", action="store_true",
+                    help="convert with sv2v first (needed for e.g. Ibex: packages, assignment patterns)")
+    ap.add_argument("-I", "--include", action="append", default=[], help="include directory (with --sv2v)")
+    ap.add_argument("-D", "--define", action="append", default=[], help="macro definition (with --sv2v)")
     a = ap.parse_args(argv)
 
     params = {}
@@ -32,7 +36,8 @@ def main(argv=None) -> int:
         params[k] = int(v, 0)
     ns = a.namespace or "Gen." + "".join(p.capitalize() for p in a.top.split("_"))
 
-    doc = frontend.netlist_json(a.files, a.top, params)
+    doc = frontend.netlist_json(a.files, a.top, params, use_sv2v=a.sv2v, includes=a.include,
+                                defines=a.define)
     design = ir.build(doc["modules"][a.top], a.top)
     note = ", ".join(Path(f).as_posix() for f in a.files)
     if params:

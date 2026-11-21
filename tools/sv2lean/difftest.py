@@ -34,6 +34,8 @@ class Result:
     seeds: int
     cycles: int
     mismatches: List[str] = field(default_factory=list)
+    unknown_outputs: int = 0
+    compared_outputs: int = 0
 
     @property
     def ok(self) -> bool:
@@ -41,7 +43,9 @@ class Result:
 
     def summary(self) -> str:
         if self.ok:
-            return f"difftest OK: {self.seeds} random runs x {self.cycles} cycles, all registers match Yosys"
+            extra = f" ({self.unknown_outputs} x-valued output samples skipped)" if self.unknown_outputs else ""
+            return (f"difftest OK: {self.seeds} random runs x {self.cycles} cycles, "
+                    f"all registers and outputs match Yosys{extra}")
         return "difftest FAILED:\n  " + "\n  ".join(self.mismatches[:20])
 
 
@@ -54,16 +58,20 @@ def _wave_values(sig: dict, width: int, steps: int) -> List[Optional[int]]:
     for ch in wave:
         if ch == ".":
             pass
-        elif ch in "01" and width == 1:
+        elif ch in "01" and width == 1 and not data:
             cur = int(ch)
-        elif ch == "=":
-            s = data[di]
+        elif ch in "=23456789" and data:
+            # WaveDrom: '=' and the digit "colour" characters all take the next data entry;
+            # Yosys writes x values as '4' with an empty entry.
+            s = data[di] if di < len(data) else ""
             di += 1
             cur = int(s, 2) if s and set(s) <= {"0", "1"} else None
         else:
             cur = None
         out.append(cur)
-    return out[1:steps + 1]
+    # Designs with registers get a leading placeholder position; purely combinational
+    # designs do not. The last `steps` positions are the time steps in both cases.
+    return out[-steps:] if len(out) >= steps else out + [None] * (steps - len(out))
 
 
 def _yosys_trace(netlist_path: str, design: Design, init: Dict[str, int],
@@ -75,13 +83,17 @@ def _yosys_trace(netlist_path: str, design: Design, init: Dict[str, int],
         args.append(f"{how} {r.sig.yosys_name} {r.sig.width}'d{init[r.sig.name]}")
     for t, vec in enumerate(inputs, 1):
         for s in design.inputs:
-            args.append(f"-set-at {t} {s.yosys_name} {s.width}'d{vec[s.name]}")
+            if not s.undef:        # x constants: zeroed in Yosys below, set to 0 in Lean
+                args.append(f"-set-at {t} {s.yosys_name} {s.width}'d{vec[s.name]}")
     for r in design.regs:
         args.append(f"-show {r.sig.yosys_name}")
+    for name, _ in design.outputs:
+        args.append(f"-show {name}")
     with tempfile.TemporaryDirectory(dir=scratch_dir()) as td:
         wj = os.path.join(td, "wave.json")
         args.append(f"-dump_json {wj}")
-        run_yosys(f"read_json {netlist_path}; delete t:$assert t:$assume t:$cover; " + " ".join(args))
+        run_yosys(f"read_json {netlist_path}; delete t:$assert t:$assume t:$cover; setundef -zero; "
+                  + " ".join(args))
         raw = Path(wj).read_text()
         # Yosys writes names such as `$memory\mem[0]` without escaping the backslash.
         raw = re.sub(r'\\(?![\\"/bfnrtu])', r'\\\\', raw)
@@ -91,6 +103,9 @@ def _yosys_trace(netlist_path: str, design: Design, init: Dict[str, int],
     for r in design.regs:
         key = r.sig.yosys_name.lstrip("\\")
         out[r.sig.name] = _wave_values(by_name[key], r.sig.width, n) if key in by_name else [None] * n
+    for name, bits in design.outputs:
+        out["out:" + name] = (_wave_values(by_name[name], len(bits), n) if name in by_name
+                              else [None] * n)
     return out
 
 
@@ -101,13 +116,17 @@ def _lean_trace(model: str, ns: str, design: Design, init: Dict[str, int],
 
     ins = [rec({s.name: f"{vec[s.name]}#{s.width}" for s in design.inputs}) for vec in inputs]
     s0 = rec({r.sig.name: f"{init[r.sig.name]}#{r.sig.width}" for r in design.regs})
-    regs = ", ".join(f"s.{r.sig.name}.toNat" for r in design.regs)
+    from .emit_lean import Ctx, bits_expr
+    cols = [f"s.{r.sig.name}.toNat" for r in design.regs]
+    cols += [f"({bits_expr(design, bits, Ctx('w.'))}).toNat" for _, bits in design.outputs]
     harness = f"""
 namespace {ns}
 def dtInputs : List Input := [{", ".join(ins)}]
-def dtTrace : List State :=
-  (dtInputs.foldl (fun (acc : List State × State) i => (acc.1 ++ [acc.2], step acc.2 i)) ([], {s0})).1
-#eval IO.println (toString (dtTrace.map fun s => ([{regs}] : List Nat)))
+/-- (state, input) at every cycle -/
+def dtPairs : List (State × Input) :=
+  (dtInputs.foldl (fun (acc : List (State × Input) × State) i => (acc.1 ++ [(acc.2, i)], step acc.2 i))
+    ([], {s0})).1
+#eval IO.println (toString (dtPairs.map fun (s, i) => let w := comb s i; ([{", ".join(cols)}] : List Nat)))
 end {ns}
 """
     with tempfile.NamedTemporaryFile("w", suffix=".lean", delete=False, dir=REPO / "build") as f:
@@ -122,7 +141,8 @@ end {ns}
         raise RuntimeError(f"Lean failed on the generated model:\n{p.stdout}\n{p.stderr}")
     line = [l for l in p.stdout.splitlines() if l.startswith("[")][-1]
     rows = json.loads(line)
-    return {r.sig.name: [row[k] for row in rows] for k, r in enumerate(design.regs)}
+    names = [r.sig.name for r in design.regs] + ["out:" + n for n, _ in design.outputs]
+    return {name: [row[k] for row in rows] for k, name in enumerate(names)}
 
 
 def run(doc: dict, design: Design, model: str, ns: str, seeds: int = 10, cycles: int = 30) -> Result:
@@ -137,15 +157,19 @@ def run(doc: dict, design: Design, model: str, ns: str, seeds: int = 10, cycles:
         for seed in range(seeds):
             rng = random.Random(seed)
             init = {r.sig.name: rng.getrandbits(r.sig.width) for r in design.regs}
-            inputs = [{s.name: rng.getrandbits(s.width) for s in design.inputs} for _ in range(cycles)]
+            inputs = [{s.name: 0 if s.undef else rng.getrandbits(s.width) for s in design.inputs}
+                      for _ in range(cycles)]
             ys = _yosys_trace(npath, design, init, inputs)
             ln = _lean_trace(model, ns, design, init, inputs)
-            for r in design.regs:
-                if r.free:      # $anyconst: pinned with `sat -set`; Yosys does not dump it
-                    continue
+            keys = [r.sig.name for r in design.regs if not r.free]   # $anyconst: pinned, not dumped
+            keys += ["out:" + n for n, _ in design.outputs]
+            for key in keys:
                 for t in range(cycles):
-                    yv, lv = ys[r.sig.name][t], ln[r.sig.name][t]
+                    yv, lv = ys[key][t], ln[key][t]
+                    if yv is None and key.startswith("out:"):
+                        res.unknown_outputs += 1     # x in Yosys (e.g. undriven bits): not comparable
+                        continue
                     if yv != lv:
-                        res.mismatches.append(f"seed {seed} cycle {t}: {r.sig.name} yosys={yv} lean={lv}")
+                        res.mismatches.append(f"seed {seed} cycle {t}: {key} yosys={yv} lean={lv}")
                         break
     return res

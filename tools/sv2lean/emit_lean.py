@@ -81,11 +81,14 @@ def cell_expr(d: Design, c: CombCell, ctx: Ctx) -> str:
     if t in ("$mux",):
         return f"(if {port('S')} = 1#1 then {port('B')} else {port('A')})"
     if t == "$pmux":
+        # Several active selects (e.g. a violated `unique case`) are undefined in the Yosys
+        # manual. Yosys's formal backends (sat, smt2, hence SymbiYosys) let the LAST active
+        # select win, so the model does the same and agrees with them on every input.
         w, n = p["WIDTH"], p["S_WIDTH"]
         s = port("S")
         b = cn["B"]
         out = port("A")
-        for k in reversed(range(n)):
+        for k in range(n):
             bk = bits_expr(d, b[k * w:(k + 1) * w], ctx)
             out = f"(if ({s}).getLsbD {k} then {bk} else {out})"
         return out
@@ -192,8 +195,11 @@ def emit(d: Design, namespace: str, source_note: str = "") -> str:
         add(f"deriving {derive}")
         add("")
 
-    struct("Input", f"Inputs of `{d.top}`" + (f" (clock `{d.clock}` removed)." if d.clock else "."),
-           d.inputs, "Repr, DecidableEq, Inhabited")
+    undef_note = (" Fields `undef_k` stand for constant `x` bits in the RTL: values the hardware "
+                  "does not promise, so proofs must hold for every value of them."
+                  if any(s.undef for s in d.inputs) else "")
+    struct("Input", f"Inputs of `{d.top}`" + (f" (clock `{d.clock}` removed)." if d.clock else ".")
+           + undef_note, d.inputs, "Repr, DecidableEq, Inhabited")
     struct("State", f"Registers of `{d.top}`.", [r.sig for r in d.regs], "Repr, DecidableEq, Inhabited")
     struct("Comb", "Combinational signals.", [c.sig for c in d.comb], "Repr")
 

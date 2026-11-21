@@ -1,6 +1,6 @@
 # Capstone: lowRISC Ibex (OpenTitan's RV32 core)
 
-Status: **Feasibility analysis + plan** · Replaces the "write our own RV32I core" capstone.
+Status: **in progress.** Track 2 has started: the ALU and the compressed decoder are proven against the Lean RV32I/RV32C spec. See [capstone/ibex/README.md](../capstone/ibex/README.md). Replaces the "write our own RV32I core" capstone.
 
 Read [CAPSTONE_PRIMER.md](CAPSTONE_PRIMER.md) first. It explains RISC-V, Sail,
 Ibex, RVFI and riscv-formal, and what each proof below actually claims.
@@ -52,9 +52,9 @@ does — and that split is itself a lesson.
 | ISA | RV32IMC(B) — base config "small" is RV32IMC, 2-stage pipeline (IF, ID/EX), optional writeback stage |
 | Configs | `ibex_configs.yaml` (`small`, `opentitan`, `maxperf`, …) via `util/ibex_config.py` |
 | Parameters | `RV32E`, `RV32M` (None/Slow/Fast/SingleCycle), `RV32B` (None/…/OTEarlGrey), `PMPEnable`, `ICache`, `WritebackStage`, `BranchTargetALU`, `SecureIbex`, … |
-| Compressed (C) | Appears always enabled (no parameter found) — **verify**. If not disable-able: constrain via assumption *or* include C in the Lean spec (preferred; see Track 2). |
-| Frontends | Plain Yosys cannot parse Ibex SV; use **yosys-slang** (lowRISC's open proof) or **sv2v** (riscv-formal/syn flows) |
-| Formal assets | `formal/` (riscv-formal glue); lowRISC's Sail-equivalence proof flow (locate exact path at pinned commit) |
+| Compressed (C) | **Verified at `041098fe`:** C cannot be turned off. The `RV32ZC` parameter selects `RV32Zca` (standard C), `RV32ZcaZcb`, `RV32ZcaZcmp` or `RV32ZcaZcbZcmp` (the default). The capstone uses `RV32Zca` and models C fully in the Lean spec (`RtlProof/RV32I/Compressed.lean`). The decoder also has a `BaseIsa` parameter (RV32I, or RV32I/CHERIoT switchable); the capstone uses `BaseIsaRV32I`. |
+| Frontends | **Verified:** Yosys's own parser rejects `ibex_pkg.sv` (named assignment patterns). The capstone converts with **sv2v** v0.0.13 (`sv2lean --sv2v`), as Ibex's `syn/` and LEC flows do. lowRISC's formal flow uses **yosys-slang** (`read_slang` in `dv/formal/build_all.ys`). |
+| Formal assets | **Verified:** `formal/` (riscv-formal glue) and `dv/formal/` (lowRISC's Sail-equivalence flow: `Makefile`, `build_all.ys`, `conductor.py`, proof sources under `thm/`) |
 
 ## 3. Capstone configuration ("capstone" config)
 
