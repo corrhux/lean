@@ -9,6 +9,7 @@ tasks = ["w4", "w8"]          # w12 takes ~25 s with Z3; run it explicitly or vi
 namespace = "Gen.Mul8"
 generated = "RtlProof/Generated/Mul8.lean"
 module = "RtlProof.Examples.Mul.Solution"
+sv2lean_args = ["-P", "W=8"]   # parameters used to generate the Lean model
 
 [lean.theorems]
 p_mul = "Gen.Mul8.p_mul_holds"

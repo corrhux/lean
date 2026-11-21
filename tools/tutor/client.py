@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import sys
 from dataclasses import dataclass, field
-from typing import Callable, List, Optional
+from typing import Callable, Iterator, List, Optional
 
 import anthropic
 from anthropic import beta_tool
@@ -18,7 +18,6 @@ DEFAULT_EFFORT = "medium"          # Claude Opus 5.5's default; raise for hard p
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
 
-@beta_tool
 def check_lean(code: str) -> str:
     """Compile a Lean 4 snippet in the course project and report errors, warnings and
     whether it uses `sorry`. Start the snippet with `import RtlProof` to use project
@@ -31,7 +30,6 @@ def check_lean(code: str) -> str:
     return tools.as_json(tools.check_lean(code))
 
 
-@beta_tool
 def course_lookup(query: str) -> str:
     """Find course text (docs/*.md) by section heading or keyword, e.g. "L12 induction",
     "B5 certificates", "SafePrefix", "Sail".
@@ -42,7 +40,6 @@ def course_lookup(query: str) -> str:
     return tools.course_lookup(query)
 
 
-@beta_tool
 def read_file(path: str) -> str:
     """Read a project file: RTL (rtl/...), Lean (RtlProof/...), docs, or tools.
 
@@ -52,7 +49,6 @@ def read_file(path: str) -> str:
     return tools.read_file(path)
 
 
-@beta_tool
 def cex_summary(vcd_path: str) -> str:
     """Summarise a counterexample waveform (.vcd) as a table of signal values per step.
 
@@ -62,7 +58,6 @@ def cex_summary(vcd_path: str) -> str:
     return tools.cex_summary(vcd_path)
 
 
-@beta_tool
 def run_ftwin(design: str) -> str:
     """Run both sides of a twin lab (SymbiYosys tasks and Lean theorems) and return the
     comparison table. Slow (tens of seconds); use only for model-checking questions.
@@ -73,7 +68,13 @@ def run_ftwin(design: str) -> str:
     return tools.run_ftwin(design)
 
 
-TOOLS = [check_lean, course_lookup, read_file, cex_summary, run_ftwin]
+_FUNCS = [check_lean, course_lookup, read_file, cex_summary, run_ftwin]
+TOOLS = [beta_tool(f) for f in _FUNCS]
+# Streaming requests send tool inputs as they are generated (e.g. Lean code for check_lean).
+STREAM_TOOLS = [beta_tool(eager_input_streaming=True)(f) for f in _FUNCS]
+TOOL_LABELS = {"check_lean": "compiling Lean", "course_lookup": "looking up the course",
+               "read_file": "reading a file", "cex_summary": "reading a counterexample",
+               "run_ftwin": "running both sides of a twin"}
 
 
 @dataclass
@@ -99,35 +100,22 @@ class Tutor:
         self.system = [{"type": "text", "text": system_prompt(), "cache_control": {"type": "ephemeral"}}]
         self.history: List[dict] = []      # plain-text transcript of earlier questions/answers
 
-    def ask(self, message: str) -> Turn:
-        messages = self.history + [{"role": "user", "content": message}]
+    def _kwargs(self, message: str, tools_: list) -> dict:
         kwargs = dict(
             model=self.model,
             max_tokens=16000,
             system=self.system,
-            tools=TOOLS,
-            messages=messages,
+            tools=tools_,
+            messages=self.history + [{"role": "user", "content": message}],
             output_config={"effort": self.effort},
             max_iterations=self.max_iterations,
         )
         if self.model.startswith(("claude-opus-5", "claude-fable-5", "claude-sonnet-5-5")):
             # Re-run on a fallback model if a safety classifier declines (beta).
             kwargs.update(betas=[FALLBACK_BETA], fallbacks="default")
-        runner = self.client.beta.messages.tool_runner(**kwargs)
+        return kwargs
 
-        turn = Turn(text="", stop_reason=None)
-        last = None
-        for msg in runner:
-            last = msg
-            u = msg.usage
-            turn.input_tokens += u.input_tokens or 0
-            turn.output_tokens += u.output_tokens or 0
-            turn.cache_read_tokens += getattr(u, "cache_read_input_tokens", 0) or 0
-            for block in msg.content:
-                if block.type == "tool_use":
-                    turn.tool_calls.append(block.name)
-                    if self.on_tool:
-                        self.on_tool(block.name, dict(block.input))
+    def _finish(self, message: str, turn: Turn, last) -> Turn:
         if last is None:
             raise RuntimeError("no response from the model")
         turn.stop_reason = last.stop_reason
@@ -142,6 +130,53 @@ class Tutor:
         self.history += [{"role": "user", "content": message},
                          {"role": "assistant", "content": turn.text or "(no answer)"}]
         return turn
+
+    def _count(self, turn: Turn, msg) -> None:
+        u = msg.usage
+        turn.input_tokens += u.input_tokens or 0
+        turn.output_tokens += u.output_tokens or 0
+        turn.cache_read_tokens += getattr(u, "cache_read_input_tokens", 0) or 0
+        for block in msg.content:
+            if block.type == "tool_use":
+                turn.tool_calls.append(block.name)
+                if self.on_tool:
+                    self.on_tool(block.name, dict(block.input))
+
+    def ask(self, message: str) -> Turn:
+        runner = self.client.beta.messages.tool_runner(**self._kwargs(message, TOOLS))
+        turn = Turn(text="", stop_reason=None)
+        last = None
+        for msg in runner:
+            last = msg
+            self._count(turn, msg)
+        return self._finish(message, turn, last)
+
+    def stream(self, message: str) -> Iterator[dict]:
+        """Like `ask`, but yields events as they happen, for the web app:
+        {"type": "text", "text"} deltas, {"type": "tool", "name", "label"} when a tool runs,
+        {"type": "round"} between model calls, and finally {"type": "done", ...}.
+        The text of every round is streamed; the answer is the last round's text."""
+        runner = self.client.beta.messages.tool_runner(stream=True, **self._kwargs(message, STREAM_TOOLS))
+        turn = Turn(text="", stop_reason=None)
+        last = None
+        for k, stream in enumerate(runner):
+            if k:
+                yield {"type": "round"}
+            for event in stream:
+                if event.type == "text":
+                    yield {"type": "text", "text": event.text}
+            msg = stream.get_final_message()
+            last = msg
+            self._count(turn, msg)
+            for block in msg.content:
+                if block.type == "tool_use":
+                    yield {"type": "tool", "name": block.name, "label": TOOL_LABELS.get(block.name, block.name)}
+        self._finish(message, turn, last)
+        if turn.stop_reason == "refusal" or turn.stop_reason == "tool_use":
+            yield {"type": "text", "text": "\n\n" + turn.text}
+        yield {"type": "done", "model": turn.served_by, "stop_reason": turn.stop_reason,
+               "input_tokens": turn.input_tokens, "output_tokens": turn.output_tokens,
+               "cache_read_tokens": turn.cache_read_tokens, "tools": turn.tool_calls}
 
 
 def explain_api_error(e: Exception) -> str:

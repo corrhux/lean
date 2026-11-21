@@ -9,6 +9,7 @@ tasks = ["bmc", "prove", "cover"]
 namespace = "Gen.Fifo4"
 generated = "RtlProof/Generated/Fifo4.lean"
 module = "RtlProof.Examples.Fifo.Solution"
+sv2lean_args = ["-P", "AW=2", "-P", "DW=4"]   # parameters used to generate the Lean model
 
 [lean.theorems]
 p_count_le = "Gen.Fifo4.p_count_le_holds"

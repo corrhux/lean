@@ -9,6 +9,7 @@ tasks = ["bmc", "prove", "cover"]
 namespace = "Gen.Arbiter4"
 generated = "RtlProof/Generated/Arbiter4.lean"
 module = "RtlProof.Examples.Arbiter.Solution"
+sv2lean_args = ["-P", "K=2"]   # parameters used to generate the Lean model
 
 [lean.theorems]
 p_onehot = "Gen.Arbiter4.p_onehot_holds"
