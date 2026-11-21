@@ -18,6 +18,7 @@ Plan and background: [docs/CAPSTONE_IBEX.md](../../docs/CAPSTONE_IBEX.md) and
 | `ibex_decoder` | `RV32M = None`, `RV32B = None`, `BaseIsa = RV32I` | `Gen.IbexDec`: 219 cells | for **every** 32-bit instruction: legal OP/OP-IMM are accepted with the spec's ALU operation, operand sources (rs1, rs2 or the sign-extended I-immediate), rd write-back and no memory request; reserved `funct7`/shift encodings are rejected; branches set the ALU to the spec's comparison | `RtlProof/RV32I/Ibex/Decoder.lean` |
 | **decoder + ALU** | as above | both models | `op_executes`, `op_imm_executes`: for every legal OP / OP-IMM instruction and all register values, the ALU result the decoder sets up is the value the spec writes to rd | `RtlProof/RV32I/Ibex/Decoder.lean` |
 | **loads, stores, jumps** | as above | both models | LB/LH/LW/LBU/LHU and SB/SH/SW: legal encodings accepted (others rejected), memory request with the right size, write flag and sign extension, rs1/rs2/rd routing, and **the ALU computes the spec's address `rs1 + imm`**. JAL/JALR: first cycle computes the spec's target (`pc + immJ`, `rs1 + immI`) and requests the jump; second cycle computes the link value and writes rd. Branches: second cycle computes `pc + immB` when taken. | `RtlProof/RV32I/Ibex/LoadStoreJump.lean` |
+| **LUI, AUIPC, FENCE, SYSTEM** | as above | both models | LUI/AUIPC write `immU` / `pc + immU` (composed with the ALU); FENCE writes nothing; FENCE.I jumps to the next instruction and invalidates the I-cache; ECALL/EBREAK/MRET/WFI/DRET recognised exactly at their encodings (any other `funct3 = 000` word is illegal); Zicsr instructions access the right CSR with the spec's operation (CSRRS/CSRRC with a zero source only read), the right source (rs1 or `uimm`) and write the old value to rd | `RtlProof/RV32I/Ibex/System.lean` |
 | `ibex_compressed_decoder` | `RV32ZC = RV32Zca`, `BaseIsa = RV32I` | `Gen.IbexCDec`: 63 cells | for **all** 49,152 compressed encodings: illegal exactly when the spec says so, and every legal one expands to the spec's 32-bit instruction; 32-bit instructions pass through | `RtlProof/RV32I/Ibex/CDec.lean` |
 
 The spec (`RtlProof/RV32I/Spec.lean`, `RtlProof/RV32I/Compressed.lean`) is
@@ -60,8 +61,7 @@ formal backends (so the Lean models agree with SymbiYosys on every input):
   yosys-slang, rIC3 and the Sail compiler. None of these run in the
   WebAssembly toolchain used here; the dev container image installs the CAD
   suite.
-* **More Track 2 blocks:** LUI/AUIPC and SYSTEM (CSR, ECALL/EBREAK, MRET,
-  WFI, FENCE) in the decoder; the load/store unit (byte lanes, sign extension,
+* **More Track 2 blocks:** the load/store unit (byte lanes, sign extension,
   misaligned splitting); the register file; `ibex_multdiv_slow` (needs a
   sequential invariant).
 * **Covered by other parts of Ibex, not yet proven:** the `IMM_B_INCR_PC`

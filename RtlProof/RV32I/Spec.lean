@@ -67,6 +67,10 @@ def immS : BitVec 32 := (w.extractLsb 31 25 ++ w.extractLsb 11 7 : BitVec 12).si
 def immB : BitVec 32 :=
   (w.extractLsb 31 31 ++ w.extractLsb 7 7 ++ w.extractLsb 30 25 ++ w.extractLsb 11 8 ++ 0#1
     : BitVec 13).signExtend 32
+/-- The U-type immediate (LUI, AUIPC): `w[31:12]` followed by twelve zeros. -/
+def immU : BitVec 32 := w.extractLsb 31 12 ++ 0#12
+/-- The 12-bit CSR address of a Zicsr instruction. -/
+def csrAddr : BitVec 12 := w.extractLsb 31 20
 /-- The J-type immediate (JAL): `imm[20|10:1|11|19:12]`, bit 0 is zero. -/
 def immJ : BitVec 32 :=
   (w.extractLsb 31 31 ++ w.extractLsb 19 12 ++ w.extractLsb 20 20 ++ w.extractLsb 30 21 ++ 0#1
@@ -157,5 +161,54 @@ def jalTarget (w pc : BitVec 32) : BitVec 32 := pc + immJ w
 def jalrTarget (w rs1v : BitVec 32) : BitVec 32 := (rs1v + immI w) &&& ~~~1#32
 /-- Branch target when taken. -/
 def branchTarget (w pc : BitVec 32) : BitVec 32 := pc + immB w
+
+/-! ### LUI, AUIPC, FENCE, SYSTEM (RV32I §2.4, 2.7, 2.8; Zicsr; Zifencei; privileged spec) -/
+
+def OPC_LUI : BitVec 7 := 0x37#7
+def OPC_AUIPC : BitVec 7 := 0x17#7
+def OPC_MISC_MEM : BitVec 7 := 0x0f#7
+def OPC_SYSTEM : BitVec 7 := 0x73#7
+
+/-- LUI writes `immU`; AUIPC writes `pc + immU`. -/
+def luiResult (w : BitVec 32) : BitVec 32 := immU w
+def auipcResult (w pc : BitVec 32) : BitVec 32 := pc + immU w
+
+/-- FENCE (`funct3 = 000`) and FENCE.I (`funct3 = 001`, Zifencei) are the only MISC-MEM
+instructions. -/
+def fenceLegal (w : BitVec 32) : Bool := opcode w = OPC_MISC_MEM && funct3 w = 0b000#3
+def fenceILegal (w : BitVec 32) : Bool := opcode w = OPC_MISC_MEM && funct3 w = 0b001#3
+
+/-- `funct3 = 000` SYSTEM instructions are fully fixed encodings: rs1 = rd = 0 and a fixed
+`imm[11:0]`. -/
+def sysFixed (w : BitVec 32) (imm : BitVec 12) : Bool :=
+  opcode w = OPC_SYSTEM && funct3 w = 0b000#3 && rs1Field w = 0#5 && rdField w = 0#5 &&
+    csrAddr w = imm
+
+def isEcall (w : BitVec 32) : Bool := sysFixed w 0x000#12
+def isEbreak (w : BitVec 32) : Bool := sysFixed w 0x001#12
+def isMret (w : BitVec 32) : Bool := sysFixed w 0x302#12   -- privileged spec
+def isWfi (w : BitVec 32) : Bool := sysFixed w 0x105#12    -- privileged spec
+def isDret (w : BitVec 32) : Bool := sysFixed w 0x7b2#12   -- debug spec
+
+/-- Zicsr: CSRRW/S/C (`funct3` 001/010/011) and CSRRWI/SI/CI (101/110/111). -/
+def csrLegal (w : BitVec 32) : Bool :=
+  opcode w = OPC_SYSTEM && (funct3 w).extractLsb 1 0 != 0b00#2
+
+/-- What a CSR instruction does to the CSR. CSRRS/CSRRC (and their immediate forms) whose
+source operand field is zero only read: the spec says they must not write the CSR. -/
+inductive CsrOp where
+  | read | write | set | clear
+deriving DecidableEq, Repr
+
+def csrOpOf (w : BitVec 32) : CsrOp :=
+  let k := (funct3 w).extractLsb 1 0
+  if k = 0b01#2 then .write
+  else if rs1Field w = 0#5 then .read
+  else if k = 0b10#2 then .set
+  else .clear
+
+/-- The immediate forms take the 5-bit `uimm` in the rs1 field, zero-extended. -/
+def csrUsesImm (w : BitVec 32) : Bool := (funct3 w).extractLsb 2 2 = 1#1
+def csrUimm (w : BitVec 32) : BitVec 32 := (rs1Field w).setWidth 32
 
 end RV32I
