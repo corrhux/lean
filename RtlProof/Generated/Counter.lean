@@ -15,6 +15,7 @@ Regenerate with `python -m sv2lean ...`; see tools/sv2lean.
 
 namespace Gen.Counter
 open RtlProof
+set_option linter.unusedVariables false  -- combinational designs ignore `s`, etc.
 
 /-- Inputs of `counter` (clock `clk` removed). -/
 structure Input where

@@ -81,7 +81,10 @@ def _yosys_trace(netlist_path: str, design: Design, init: Dict[str, int],
         wj = os.path.join(td, "wave.json")
         args.append(f"-dump_json {wj}")
         run_yosys(f"read_json {netlist_path}; delete t:$assert t:$assume t:$cover; " + " ".join(args))
-        waves = json.load(open(wj))["signal"]
+        raw = Path(wj).read_text()
+        # Yosys writes names such as `$memory\mem[0]` without escaping the backslash.
+        raw = re.sub(r'\\(?![\\"/bfnrtu])', r'\\\\', raw)
+        waves = json.loads(raw)["signal"]
     by_name = {w["name"].lstrip("\\"): w for w in waves}
     out = {}
     for r in design.regs:

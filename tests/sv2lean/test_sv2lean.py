@@ -82,3 +82,16 @@ def test_unsupported_cell_is_reported():
                    "  always_ff @(posedge clk) q <= a / b;\nendmodule\n")
     with pytest.raises(ir.UnsupportedDesign, match=r"\$div"):
         generate([src], "div", "T.Div")
+
+
+def test_fifo_with_memory_matches_yosys():
+    doc, d, text = generate([REPO / "rtl/fifo/fifo.sv"], "fifo", "T.Fifo", {"AW": 2, "DW": 4})
+    assert {f"mem_{k}" for k in range(4)} <= {r.sig.name for r in d.regs}
+    res = difftest.run(doc, d, text, "T.Fifo", seeds=4, cycles=40)
+    assert res.ok, res.summary()
+
+
+def test_multiplier_matches_yosys():
+    doc, d, text = generate([REPO / "rtl/mul/mul.sv"], "mul", "T.Mul", {"W": 6})
+    assert not d.regs                      # purely combinational: nothing to compare per cycle
+    assert "p" in {c.sig.name for c in d.comb}

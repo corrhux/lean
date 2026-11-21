@@ -46,6 +46,9 @@ def lower_script(files: Sequence[str], top: str, params: Dict[str, int], out_jso
     steps += [
         f"prep -top {top}",
         "flatten",
+        "memory -nomap",
+        "memory_map",          # memories → one register per word + read/write muxes
+        "opt_clean",
         "async2sync",          # async resets → synchronous (single-clock semantics)
         "dffunmap",            # $sdff/$dffe/... → plain $dff + muxes
         "opt_clean -purge",

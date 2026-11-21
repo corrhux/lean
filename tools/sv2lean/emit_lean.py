@@ -179,6 +179,7 @@ def emit(d: Design, namespace: str, source_note: str = "") -> str:
     add("")
     add(f"namespace {namespace}")
     add("open RtlProof")
+    add("set_option linter.unusedVariables false  -- combinational designs ignore `s`, etc.")
     add("")
 
     def struct(name: str, doc: str, sigs: Sequence[Signal], derive: str) -> None:

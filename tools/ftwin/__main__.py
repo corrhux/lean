@@ -202,6 +202,59 @@ def cmd_run(a: argparse.Namespace) -> int:
     return 1 if bad else 0
 
 
+def cmd_bench(a: argparse.Namespace) -> int:
+    """Sweep one parameter: a BMC run per value, next to one all-values Lean theorem."""
+    ddir = REPO / "rtl" / a.design
+    cfg = tomllib.loads((ddir / "twin.toml").read_text())
+    b = cfg["bench"]
+    values = [int(v) for v in a.values.split(",")] if a.values else b["values"]
+    work = REPO / "build" / "ftwin" / f"{a.design}_bench"
+    work.mkdir(parents=True, exist_ok=True)
+    for f in cfg["files"]:
+        shutil.copy(ddir / f, work / f)
+    rows = []
+    for v in values:
+        reads = "\n".join(f"read -formal {f}" for f in cfg["files"])
+        (work / "bench.sby").write_text(
+            f"[options]\nmode {b.get('mode', 'bmc')}\ndepth {b.get('depth', 1)}\n[engines]\n{b['engine']}\n"
+            f"[script]\n{reads}\nchparam -set {b['param']} {v} {cfg['top']}\nprep -top {cfg['top']}\n"
+            f"[files]\n" + "\n".join(cfg["files"]) + "\n")
+        t0 = time.perf_counter()
+        try:
+            p = subprocess.run(_sby_cmd() + ["-f", "bench.sby"], cwd=work, capture_output=True,
+                               text=True, timeout=a.timeout)
+            done = re.search(r"DONE \((\w+), rc=", p.stdout + p.stderr)
+            status = done.group(1) if done else "ERROR"
+        except subprocess.TimeoutExpired:
+            status = "TIMEOUT"
+        dt = round(time.perf_counter() - t0, 2)
+        rows.append({"param": b["param"], "value": v, "engine": b["engine"], "status": status, "time_s": dt})
+        print(f"{b['param']}={v:<4} {b['engine']:<12} {status:<8} {dt:>8.2f}s", flush=True)
+    thm = b.get("all_values_theorem")
+    if thm:
+        lake = os.environ.get("LAKE") or shutil.which("lake") or str(Path.home() / ".elan/bin/lake")
+        mod = cfg["lean"]["module"]
+        subprocess.run([lake, "build", mod], cwd=REPO, capture_output=True)
+        (REPO / "build").mkdir(exist_ok=True)
+        probe = REPO / "build" / "ftwin_bench_probe.lean"
+        probe.write_text(f"import {mod}\n#print axioms {thm}\n")
+        t0 = time.perf_counter()
+        p = subprocess.run([lake, "env", "lean", str(probe)], cwd=REPO, capture_output=True, text=True)
+        dt = round(time.perf_counter() - t0, 2)
+        ok = "depends on axioms" in p.stdout and "sorryAx" not in p.stdout
+        print(f"{b['param']}=all  Lean         {'PROVED' if ok else 'ERROR':<8} {dt:>8.2f}s   {thm} "
+              f"(one proof, every {b['param']}; time = load + check)")
+        rows.append({"param": b["param"], "value": "all", "engine": "lean", "status": "PROVED" if ok else "ERROR",
+                     "time_s": dt, "theorem": thm})
+    if a.csv:
+        Path(a.csv).parent.mkdir(parents=True, exist_ok=True)
+        with open(a.csv, "w") as f:
+            f.write("param,value,engine,status,time_s\n")
+            for r in rows:
+                f.write(f"{r['param']},{r['value']},{r['engine']},{r['status']},{r['time_s']}\n")
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="ftwin", description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -211,6 +264,12 @@ def main(argv=None) -> int:
     r.add_argument("--mc-only", action="store_true")
     r.add_argument("--lean-only", action="store_true")
     r.set_defaults(fn=cmd_run)
+    b = sub.add_parser("bench", help="sweep a parameter: BMC time per value vs one Lean theorem")
+    b.add_argument("design")
+    b.add_argument("--values", help="comma-separated, overrides twin.toml")
+    b.add_argument("--timeout", type=float, default=300)
+    b.add_argument("--csv")
+    b.set_defaults(fn=cmd_bench)
     a = ap.parse_args(argv)
     return a.fn(a)
 
