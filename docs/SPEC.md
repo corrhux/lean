@@ -84,6 +84,12 @@ generate and check a DRAT/LRAT UNSAT proof; watch `bv_decide` do the same inside
 current module, file, Lean goal and last engine result and answers via a hint
 ladder; any tactic it proposes has been compiled first.
 
+**W6a — Understand the target.** Before the capstone, work through course
+E0 ([CAPSTONE_PRIMER.md](CAPSTONE_PRIMER.md)): run Ibex and the Sail emulator
+on the same program, compare traces, read the Sail for a handful of
+instructions, run riscv-formal checks, and answer the reading-guide questions
+about the Ibex ⇔ Sail proof.
+
 **W6 — Capstone.** Run the Ibex open formal flow (model checking) and the
 riscv-formal checks; prove Ibex sub-blocks in Lean against a Lean RV32I spec;
 optionally attempt the pipeline slice refinement.
@@ -168,6 +174,12 @@ optionally attempt the pipeline slice refinement.
 - FR-C1 Parts A–E as in COURSE.md, each chapter with objectives, reading,
   lab, Jasper mapping, and a "what changed vs. model checking" debrief.
 - FR-C2 Every Lean code block compiled in CI; every SV block linted/elaborated in CI.
+- FR-C3 Capstone prerequisite block E0 (RISC-V for verifiers, Sail, Ibex
+  tour, co-simulation, RVFI/riscv-formal, anatomy of the Ibex ⇔ Sail proof,
+  coverage matrix) with runnable labs: Sail emulator, Ibex `simple_system` in
+  Verilator, trace comparison script, riscv-formal checks.
+- FR-C4 `ftwin ibex cosim <elf>` — run Ibex (Verilator) and the Sail emulator
+  on the same ELF and diff the retirement traces.
 
 ## 7. Non-functional requirements
 - NFR-1 Reproducible: pinned versions for every tool; devcontainer + Docker image.
@@ -189,6 +201,7 @@ optionally attempt the pipeline slice refinement.
 | M2 | `sv2lean` + differential testing | All Part D designs translate; diff tests pass |
 | M3 | `satlab` + Course Part B (SAT, certificates, history) | CDCL trace viewer works; solver zoo table reproducible; LRAT demo checks |
 | M4 | Remaining examples, `ftwin bench`, Parts A, C, D | Multiplier scaling chart produced; all exercise solutions sorry-free |
+| M5a | Capstone primer labs (course E0) | Sail emulator + Ibex simple_system run; cosim diff works; primer §7.3 questions answered from the pinned flow and the **(verify)** items in the primer resolved |
 | M5 | Ibex capstone (see CAPSTONE_IBEX.md) | Tracks 1 & 2 complete; Track 3 slice documented (proven or honestly scoped) |
 | M6 | Tutor CLI | Tutor answers on 10 scripted scenarios; all suggested code compiles |
 | M7 | Web app | All W1–W6 workflows usable in the browser |

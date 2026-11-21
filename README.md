@@ -18,5 +18,6 @@ Status: **specification and architecture stage.** No implementation yet.
 | [docs/SPEC.md](docs/SPEC.md) | Goals, workflows, requirements, milestones |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, repo layout, toolchain, interfaces, CI, design decisions |
 | [docs/COURSE.md](docs/COURSE.md) | Full syllabus, Parts A–E, including the SAT and history chapters |
+| [docs/CAPSTONE_PRIMER.md](docs/CAPSTONE_PRIMER.md) | Background on RISC-V, Sail, Ibex, RVFI, riscv-formal and the Ibex ⇔ Sail proof: what each check actually verifies |
 | [docs/CAPSTONE_IBEX.md](docs/CAPSTONE_IBEX.md) | Whether an Ibex capstone is feasible, and the three-track plan |
 | [docs/REFERENCES.md](docs/REFERENCES.md) | Third-party projects, licences, bibliography |

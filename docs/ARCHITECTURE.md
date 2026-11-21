@@ -93,7 +93,9 @@ Third-party *source* lives only under `third_party/` as submodules. Third-party
 | Course | mdBook | Book build | cargo |
 | RISC-V | lowRISC Ibex | Capstone DUT | submodule |
 | RISC-V | riscv-formal | RVFI-based ISA checks | submodule |
-| RISC-V | sail-riscv + Sail (optional) | Golden spec; Sail→Lean cross-check | submodule + opam (OCaml 5.x) |
+| RISC-V | sail-riscv + Sail | Golden spec; **emulator for co-simulation labs (E0)**; optional Sail→Lean cross-check | submodule + opam (OCaml 5.x) / release binary |
+| RISC-V | Verilator | Simulate Ibex `simple_system` for E0 labs | OSS CAD Suite / distro |
+| RISC-V | RISC-V GCC (rv32 bare-metal) | Compile lab programs (ELF) | prebuilt toolchain release |
 | Tutor | Anthropic Python SDK | Tutor model calls | pip |
 
 **Network hosts needed on the implementation machine** (the cloud sandbox used
@@ -217,7 +219,13 @@ handle on "what you are trusting".
 
 Runners: `sby.py` (generates per-engine `.sby` from a template + design
 config), `lean.py` (`lake env lean --json` + `#print axioms` probe), `ric3.py`
-(AIGER in, witness out → VCD via `yosys-witness`), `ibex.py` (capstone wrappers).
+(AIGER in, witness out → VCD via `yosys-witness`), `ibex.py` (capstone wrappers:
+`rvfi`, `sail-proof`, `cosim`).
+
+`ftwin ibex cosim <elf>`: build Ibex `simple_system` (Verilator) → run ELF →
+parse `ibex_tracer` log; run the Sail emulator on the same ELF with
+instruction tracing → normalise both to `(order, pc, insn, rd, rd_wdata,
+mem_addr, mem_wdata)` → first-divergence report. Used by course E0.4.
 
 `bench.py`: parameter sweep → re-elaborate → run engines with timeout →
 CSV (`design,param,engine,status,time_s`) → chart (matplotlib, SVG).

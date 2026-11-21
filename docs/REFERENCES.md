@@ -29,7 +29,9 @@ third-party code is pulled as pinned submodules or installed packages.
 | mdBook | Course book | MPL-2.0 |
 | lowRISC Ibex | Capstone DUT | Apache-2.0 |
 | riscv-formal | RVFI checks | ISC |
-| sail-riscv, Sail (optional) | ISA spec, Sail→Lean | BSD-2-Clause (verify) |
+| sail-riscv, Sail | ISA spec, emulator, Sail→Lean | BSD-2-Clause (verify) |
+| Verilator | Ibex simulation (E0 labs) | LGPL-3.0 / Artistic-2.0 (verify) |
+| RISC-V GNU toolchain | Compile lab ELFs | GPL (tool only, not linked) (verify) |
 | Anthropic Python SDK | Tutor | MIT (verify) |
 
 ## Ibex / capstone sources
@@ -42,6 +44,10 @@ third-party code is pulled as pinned submodules or installed packages.
 - Ibex configuration docs — https://ibex-core.readthedocs.io/en/latest/02_user/configuration.html
 - Ibex `formal/` (riscv-formal via sv2v + Yosys) and `syn/` flows — in the Ibex repository
 - sail-riscv — https://github.com/riscv/sail-riscv (Lean backend: confirm status with Sail compiler docs)
+- Armstrong et al., *ISA Semantics for ARMv8-A, RISC-V, and CHERI-MIPS*, POPL 2019 (Sail).
+- riscv-formal / RVFI — https://github.com/YosysHQ/riscv-formal
+- RISC-V Unprivileged and Privileged ISA specifications — https://riscv.org/specifications/
+- Ibex `examples/simple_system` and `ibex_tracer` — in the Ibex repository
 
 ## Lean
 - *Theorem Proving in Lean 4*; *Functional Programming in Lean*; *Mathematics in Lean*;

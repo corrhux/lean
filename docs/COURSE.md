@@ -219,8 +219,46 @@ re-verified against the primary source while writing the chapter.
 
 ## Part E — Capstone: lowRISC Ibex (OpenTitan's CPU)
 
-See [CAPSTONE_IBEX.md](CAPSTONE_IBEX.md). Chapters:
+See [CAPSTONE_IBEX.md](CAPSTONE_IBEX.md). Background reading for E0 is
+[CAPSTONE_PRIMER.md](CAPSTONE_PRIMER.md).
 
+### E0. Understanding the verification target (prerequisite block)
+Goal: before proving anything about Ibex, be able to say precisely **what the
+DUT is, what the spec is, and what the glue between them claims.**
+
+- **E0.1 RISC-V for verifiers.** Architectural state, formats and scrambled
+  immediates, extensions I/M/C/Zicsr, traps and privilege.
+  *Lab:* decode 20 instruction words by hand, then check with
+  `bv_decide` against the Lean spec's decoder. *Jasper mapping:* the ISA is
+  the "spec document" behind every assertion you would write.
+- **E0.2 Sail, the spec language.** Types with dependent widths, scattered
+  `ast`/`encdec`/`execute`, `step`, backends (C++, SV, Lean), configuration of
+  implementation-defined behaviour.
+  *Lab:* build the sail-riscv emulator; run a small ELF; read the Sail for
+  ADDI, BEQ, LW, C.ADDI, ECALL and write the Lean counterpart for the first three.
+  *Jasper mapping:* Sail→SV is a machine-generated C2RTL-style reference model.
+- **E0.3 Ibex microarchitecture tour.** IF (prefetch buffer, compressed
+  decoder), ID/EX (decoder, controller FSM, ALU, multdiv, LSU, CSRs),
+  register file, configs; **where architectural state lives** (abstraction map).
+  *Lab:* run `examples/simple_system` in Verilator; read the `ibex_tracer` log;
+  find, in the waveform, the cycle each instruction retires and the signals
+  holding PC/x-regs.
+- **E0.4 Co-simulation.** Ibex trace vs Sail emulator trace on the same ELF —
+  the simulation-world version of the formal claim. *Lab:* inject a decoder
+  bug and watch the traces diverge; then show riscv-formal catching it.
+- **E0.5 RVFI and riscv-formal.** RVFI fields; the decomposition
+  (`insn_*` relative to reported operands + `reg`/`pc_*`/`causal` for
+  consistency); bounded depth; RVFI logic in the trust base.
+  *Lab:* run `insn_add` and `reg` checks on Ibex; break RVFI wiring and see
+  which check fails.
+- **E0.6 Anatomy of the Ibex ⇔ Sail proof.** Observational correctness (why
+  memory-operation order is the right claim when memory is outside the core);
+  Sail→SV harness; lemma ordering; 1-/2-induction; trusted base.
+  *Lab:* answer the primer's §7.3 reading-guide questions from the actual flow.
+- **E0.7 Coverage matrix.** Who proves what (primer §8) — the frame for E5's
+  retrospective.
+
+### E1–E5. The capstone tracks
 - **E1. Meet Ibex:** configuration, pipeline, RVFI, the formal story so far
   (CHERIoT-Ibex in Jasper; vanilla Ibex on Yosys + yosys-slang + rIC3).
 - **E2. Track 1 — model checking the whole core:** run riscv-formal and the
@@ -246,3 +284,6 @@ See [CAPSTONE_IBEX.md](CAPSTONE_IBEX.md). Chapters:
 - MC: BMC, k-induction, interpolation, IC3/PDR papers; YosysHQ SBY docs.
 - History: Gordon *From LCF to HOL*; MacKenzie *Mechanizing Proof* (book, not free).
 - Ibex: Ibex docs; lowRISC Ibex proof article; CHERIoT-Ibex arXiv paper; Ploix DVClub slides.
+- RISC-V & Sail: RISC-V Unprivileged/Privileged specs; Armstrong et al.,
+  *ISA Semantics for ARMv8-A, RISC-V, and CHERI-MIPS* (POPL 2019); sail-riscv
+  README and model sources; riscv-formal / RVFI documentation.

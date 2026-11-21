@@ -2,6 +2,9 @@
 
 Status: **Feasibility analysis + plan** · Replaces the "write our own RV32I core" capstone.
 
+Read [CAPSTONE_PRIMER.md](CAPSTONE_PRIMER.md) first. It explains RISC-V, Sail,
+Ibex, RVFI and riscv-formal, and what each proof below actually claims.
+
 ---
 
 ## 1. Question and answer
