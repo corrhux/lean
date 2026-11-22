@@ -1,0 +1,96 @@
+#!/bin/bash
+# Proof vs. Search: one command to set up (first time) and open the course app.
+#
+#   ./start            set up if needed, then open http://127.0.0.1:8000 in your browser
+#   PORT=8001 ./start  use another port
+#
+# The first run installs into this folder (.venv) and your home folder (~/.elan, Lean's
+# installer), downloads Lean and builds the proofs: expect 10-20 minutes. Later runs
+# take seconds. Everything stays on this machine; the app listens on 127.0.0.1 only.
+# Works on macOS (bash 3.2) and Linux.
+set -euo pipefail
+cd "$(dirname "$0")"
+PORT="${PORT:-8000}"
+say() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
+die() { printf '\n\033[31m%s\033[0m\n' "$*" >&2; exit 1; }
+
+# --- Python 3.11 or newer --------------------------------------------------------------
+PY=""
+for c in python3.13 python3.12 python3.11 python3; do
+  if command -v "$c" >/dev/null 2>&1 && "$c" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' 2>/dev/null; then
+    PY="$c"; break
+  fi
+done
+if [ -z "$PY" ]; then
+  if [ "$(uname)" = "Darwin" ]; then
+    die "Python 3.11 or newer is needed (macOS's own python3 is older).
+Install it with Homebrew:   brew install python@3.12
+(no Homebrew? get it from https://brew.sh, or Python from https://www.python.org/downloads/)
+then run ./start again."
+  fi
+  die "Python 3.11 or newer is needed; install it with your package manager, then run ./start again."
+fi
+
+# --- Lean (elan, Lean's version manager) -----------------------------------------------
+export PATH="$HOME/.elan/bin:$PATH"
+if ! command -v lake >/dev/null 2>&1; then
+  say "Lean is not installed."
+  printf 'Install it now with Lean'"'"'s official installer (into ~/.elan, no admin rights)? [Y/n] '
+  read -r ans
+  case "${ans:-y}" in
+    [Yy]*) curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+             | sh -s -- -y --default-toolchain none ;;
+    *) die "Lean is needed. Install it from https://lean-lang.org/install/ and run ./start again." ;;
+  esac
+fi
+
+# --- the Ibex sources (for the capstone) -----------------------------------------------
+if [ ! -e third_party/ibex/rtl/ibex_alu.sv ]; then
+  say "Fetching lowRISC Ibex (capstone sources)"
+  git submodule update --init third_party/ibex
+fi
+
+# --- Python tools, in .venv (re-installed only when pyproject.toml changes) -----------
+if [ ! -x .venv/bin/python ]; then
+  say "Creating .venv with $PY"
+  "$PY" -m venv .venv
+fi
+stamp="$(cksum pyproject.toml | cut -d' ' -f1)"
+if [ "$(cat .venv/.pvs-stamp 2>/dev/null || true)" != "$stamp" ]; then
+  say "Installing the course tools (SAT solvers, Yosys/SymbiYosys, the app)"
+  if ! { .venv/bin/python -m pip install --upgrade pip && .venv/bin/python -m pip install -e ".[dev,hdl,app,tutor]"; } \
+       > .venv/install.log 2>&1; then
+    tail -n 30 .venv/install.log
+    die "Installing the Python tools failed; the full log is in .venv/install.log"
+  fi
+  echo "$stamp" > .venv/.pvs-stamp
+fi
+export PATH="$PWD/.venv/bin:$PATH"
+
+# --- Lean library (downloads the pinned Lean version the first time) -------------------
+say "Building the Lean library (the first time takes a while; later runs are quick)"
+lake build 2>&1 | tail -n 3
+
+# --- the app -----------------------------------------------------------------------------
+URL="http://127.0.0.1:$PORT"
+if curl -s -o /dev/null "$URL/api/status" 2>/dev/null; then
+  die "Something is already running on port $PORT (maybe the app). Open $URL, or run: PORT=8001 ./start"
+fi
+say "Starting the app at $URL  (Ctrl-C here stops it)"
+pvs-app --port "$PORT" &
+APP=$!
+trap 'kill $APP 2>/dev/null || true' INT TERM EXIT
+for _ in $(seq 1 60); do
+  curl -s -o /dev/null "$URL/api/status" 2>/dev/null && break
+  sleep 0.5
+done
+if command -v open >/dev/null 2>&1; then open "$URL"
+elif command -v xdg-open >/dev/null 2>&1; then xdg-open "$URL" >/dev/null 2>&1 || true
+else echo "Open $URL in your browser."
+fi
+if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+  echo "Tutor: on."
+else
+  echo "Tutor: off (optional; to enable it, start with: ANTHROPIC_API_KEY=... ./start)."
+fi
+wait "$APP"

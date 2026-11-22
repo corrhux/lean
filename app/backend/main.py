@@ -319,6 +319,58 @@ def satlab_zoo(req: ZooRequest) -> dict:
     return {"vars": cnf.num_vars, "clauses": len(cnf.clauses), "rows": rows}
 
 
+# satlab's five labs (satlab/README.md), as fixed command lists: the app never runs other commands.
+SAT_LABS = {
+    1: ("Watch CDCL learn (B2)", [
+        ["gen", "pigeonhole", "-n", "2", "-o", "php2.cnf"],
+        ["solve", "php2.cnf", "--trace", "php2.jsonl"],
+        ["trace", "php2.jsonl", "--names", "php2.cnf"]]),
+    2: ("A counterexample from a SAT model (B4)", [
+        ["gen", "counter-bmc", "--depth", "12", "--wrap", "10", "-o", "bug.cnf"],
+        ["solve", "bug.cnf", "--model"]]),
+    3: ("Why multipliers are hard for SAT (B3, D6)", [
+        ["gen", "mul-miter", "--width", "4", "-o", "m4.cnf"], ["solve", "m4.cnf"],
+        ["gen", "mul-miter", "--width", "6", "-o", "m6.cnf"], ["solve", "m6.cnf"],
+        ["gen", "mul-miter", "--width", "8", "-o", "m8.cnf"], ["zoo", "m8.cnf", "--timeout", "20"]]),
+    4: ("No heuristic wins everywhere (B3)", [
+        ["gen", "mul-miter", "--width", "6", "-o", "m6.cnf"], ["ablate", "m6.cnf"],
+        ["gen", "random", "-n", "150", "-m", "640", "--seed", "1", "-o", "r1.cnf"], ["ablate", "r1.cnf"]]),
+    5: ("Checking an UNSAT answer (B5)", [
+        ["gen", "mul-miter", "--width", "4", "-o", "m4.cnf"],
+        ["solve", "m4.cnf", "--proof", "m4.drup"], ["check", "m4.cnf", "m4.drup"]]),
+}
+
+
+@app.get("/api/satlab/labs")
+def satlab_labs() -> List[dict]:
+    return [{"lab": k, "title": v[0], "commands": ["satlab " + " ".join(c) for c in v[1]]}
+            for k, v in SAT_LABS.items()]
+
+
+class LabRequest(BaseModel):
+    lab: int = Field(ge=1, le=5)
+
+
+@app.post("/api/satlab/lab")
+def satlab_lab(req: LabRequest) -> dict:
+    """Run one of satlab's labs, command by command, in `build/app/satlab/`."""
+    import time
+    work = RESULTS / "satlab"
+    work.mkdir(parents=True, exist_ok=True)
+    steps = []
+    for cmd in SAT_LABS[req.lab][1]:
+        t0 = time.perf_counter()
+        try:
+            p = subprocess.run([sys.executable, "-m", "satlab.cli", *cmd], cwd=work, capture_output=True,
+                               text=True, timeout=300, env={**os.environ, "PYTHONPATH": str(REPO)})
+            out = (p.stdout + p.stderr).strip()
+        except subprocess.TimeoutExpired:
+            out = "(stopped after 300 s)"
+        steps.append({"command": "satlab " + " ".join(cmd), "output": out[-20000:],
+                      "seconds": round(time.perf_counter() - t0, 2)})
+    return {"lab": req.lab, "title": SAT_LABS[req.lab][0], "steps": steps}
+
+
 class TutorRequest(BaseModel):
     question: str = Field(max_length=10_000)
     file: Optional[str] = None
@@ -369,6 +421,38 @@ def tutor_stream(req: TutorRequest) -> StreamingResponse:
 
     return StreamingResponse(events(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache"})
+
+
+# ------------------------------------------------------------------------ workbook
+def _workbook() -> List[dict]:
+    """The Lean files you work in: the lab exercises and the exam."""
+    out = []
+    for f in sorted((REPO / "RtlProof" / "Examples").glob("*/Exercise.lean")):
+        out.append({"path": str(f.relative_to(REPO)), "title": f"Lab exercise: {f.parent.name}",
+                    "solution": str((f.parent / "Solution.lean").relative_to(REPO))})
+    for name, path in EXAM_PARTS.items():
+        out.append({"path": path, "title": f"Ibex exam: {name}", "solution": None})
+    return out
+
+
+@app.get("/api/workbook")
+def workbook() -> List[dict]:
+    return [{**w, "text": (REPO / w["path"]).read_text()} for w in _workbook()]
+
+
+class WorkbookSave(BaseModel):
+    path: str = Field(max_length=200)
+    text: str = Field(max_length=400_000)
+
+
+@app.post("/api/workbook/save")
+def workbook_save(req: WorkbookSave) -> dict:
+    """Save one of your exercise or exam files: the only files the app writes in the repository."""
+    allowed = {w["path"] for w in _workbook()}
+    if req.path not in allowed:
+        raise HTTPException(403, f"{req.path} is not one of your exercise files")
+    (REPO / req.path).write_text(req.text)
+    return {"saved": req.path, "bytes": len(req.text.encode())}
 
 
 # ----------------------------------------------------------------------- Ibex exam

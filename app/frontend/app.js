@@ -520,7 +520,44 @@ theorem add_zero_right (x : BitVec 8) (h : x ≤ 9#8) : x + 0#8 ≤ 9#8 := by
 const scratchEditor = makeEditor($("scratch-editor"), { lang: "lean", value: store.get("pvs.scratch") || SCRATCH_DEFAULT });
 const scratch = leanLive({ editor: scratchEditor, key: "scratch", msgsEl: $("scratch-msgs"), goalsEl: $("scratch-goals"), statusEl: $("scratch-status") });
 const scratchChange = scratchEditor.onChange;
-scratchEditor.onChange = (v) => { store.set("pvs.scratch", v); scratchChange(v); };
+// The workbook: the scratchpad (kept in the browser) or one of your exercise/exam files (saved to the repo).
+let wb = { files: [], current: "", texts: {}, dirty: false };
+scratchEditor.onChange = (v) => {
+  if (wb.current) { wb.texts[wb.current] = v; wb.dirty = true; $("wb-note").textContent = "unsaved changes"; }
+  else store.set("pvs.scratch", v);
+  scratchChange(v);
+};
+async function loadWorkbook() {
+  wb.files = await api("/api/workbook");
+  for (const f of wb.files) wb.texts[f.path] = f.text;
+  $("wb-file").innerHTML = `<option value="">Scratchpad</option>` +
+    wb.files.map((f) => `<option value="${esc(f.path)}">${esc(f.title)} (${esc(f.path)})</option>`).join("");
+}
+function openWorkbook(path) {
+  wb.current = path; wb.dirty = false;
+  $("wb-file").value = path;
+  const f = wb.files.find((x) => x.path === path);
+  $("wb-save").hidden = !path; $("wb-solution").hidden = !(f && f.solution);
+  $("wb-note").textContent = path ? "" : "not saved to the repository";
+  scratchEditor.value = path ? wb.texts[path] : (store.get("pvs.scratch") || SCRATCH_DEFAULT);
+  scratch.sync();
+}
+$("wb-file").addEventListener("change", (e) => {
+  if (wb.dirty && !confirm("You have unsaved changes in this file. Switch anyway?")) { $("wb-file").value = wb.current; return; }
+  openWorkbook(e.target.value);
+});
+$("wb-save").addEventListener("click", async () => {
+  try {
+    await api("/api/workbook/save", { body: { path: wb.current, text: wb.texts[wb.current] } });
+    wb.dirty = false; $("wb-note").textContent = `saved ${wb.current}`;
+  } catch (e) { $("wb-note").textContent = e.message; }
+});
+$("wb-solution").addEventListener("click", () => {
+  const f = wb.files.find((x) => x.path === wb.current);
+  if (f && f.solution && confirm("Open the solution? Try the exercise first; the tutor gives graded hints.")) {
+    show("course"); openDoc(f.solution);
+  }
+});
 
 // ---------- Ibex exam ----------
 let exam = null, examPart = "MultDiv";
@@ -562,7 +599,20 @@ $("exam-grade").addEventListener("click", async () => {
 });
 $("exam-prep").addEventListener("click", (e) => { e.preventDefault(); show("course"); openDoc("docs/CAPSTONE_EXAM_PREP.md"); });
 
-// ---------- SAT lab ----------
+// ---------- SAT lab: the five labs, then the zoo ----------
+api("/api/satlab/labs").then((labs) => {
+  $("lab-select").innerHTML = labs.map((l) => `<option value="${l.lab}">Lab ${l.lab}: ${esc(l.title)}</option>`).join("");
+}).catch(() => {});
+$("lab-run").addEventListener("click", async () => {
+  const btn = $("lab-run"); btn.disabled = true; $("lab-note").textContent = "running… (Lab 3 compares eight solvers and takes about a minute)";
+  try {
+    const r = await api("/api/satlab/lab", { body: { lab: +$("lab-select").value } });
+    $("lab-out").innerHTML = r.steps.map((s) => `<h3 class="muted"><code>$ ${esc(s.command)}</code> <span>(${s.seconds} s)</span></h3><pre class="code">${esc(s.output || "(no output)")}</pre>`).join("");
+    $("lab-note").textContent = `Lab ${r.lab} done`;
+  } catch (e) { $("lab-note").textContent = e.message; }
+  btn.disabled = false;
+});
+
 $("sat-run").addEventListener("click", async () => {
   const btn = $("sat-run"); btn.disabled = true; $("sat-note").textContent = "solving…";
   try {
@@ -600,8 +650,9 @@ function workingOn() {
   }
   const diags = scratch.diagnostics.map((d) => `line ${d.line + 1} ${d.severity}: ${d.message}`).join("\n");
   return {
-    label: "the Lean scratchpad", file: null,
-    text: [`My Lean scratchpad:\n\`\`\`lean\n${scratchEditor.value}\n\`\`\``, diags && `Lean messages:\n${diags}`,
+    label: wb.current ? wb.current : "the Lean scratchpad", file: null,
+    text: [wb.current ? `I am working on ${wb.current}. Teach; do not give me the whole proof unless the hint level is 5.` : "",
+      `My Lean ${wb.current ? "file" : "scratchpad"}:\n\`\`\`lean\n${scratchEditor.value}\n\`\`\``, diags && `Lean messages:\n${diags}`,
       scratch.goalText && `Goal at my cursor:\n${scratch.goalText}`].filter(Boolean).join("\n\n"),
   };
 }
@@ -644,6 +695,7 @@ $("tutor-ask").addEventListener("click", async () => {
   const flag = (k, label) => `${label} <b>${st[k] ? "✓" : "–"}</b>`;
   $("status").innerHTML = [flag("lean", "Lean"), flag("sby", "SymbiYosys"), flag("ibex", "Ibex"), flag("tutor", "tutor")].join(" · ");
   if (!st.tutor) { $("tutor-ask").disabled = true; $("tutor-note").textContent = "unavailable: no ANTHROPIC_API_KEY on the server"; }
+  loadWorkbook().catch(() => {});
   const docs = await api("/api/docs-list");
   $("doc-select").innerHTML = docs.map((d) => `<option value="${esc(d.path)}">${esc(d.title)}</option>`).join("");
   openDoc("course/README.md");

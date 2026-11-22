@@ -225,3 +225,29 @@ def test_app_does_not_serve_exam_solutions():
 def test_exam_grade_blank():
     r = client.post("/api/exam/grade").json()
     assert r["total"] == 100 and r["score"] == 0 and not r["tampered"]
+
+
+# ------------------------------------------------------------------ workbook, SAT labs
+def test_workbook_lists_exercises_and_exam():
+    paths = [w["path"] for w in client.get("/api/workbook").json()]
+    assert "RtlProof/Examples/Counter/Exercise.lean" in paths and "RtlProof/Exam/Ibex/MultDiv.lean" in paths
+
+
+def test_workbook_save_is_limited_to_your_files():
+    path = REPO / "RtlProof/Examples/Counter/Exercise.lean"
+    original = path.read_text()
+    try:
+        r = client.post("/api/workbook/save", json={"path": "RtlProof/Examples/Counter/Exercise.lean",
+                                                     "text": original + "-- note\n"})
+        assert r.status_code == 200 and path.read_text().endswith("-- note\n")
+    finally:
+        path.write_text(original)
+    for bad in ["RtlProof/Examples/Counter/Solution.lean", "RtlProof/Exam/Ibex/Statements.lean", "../x.lean"]:
+        assert client.post("/api/workbook/save", json={"path": bad, "text": "x"}).status_code == 403
+
+
+def test_satlab_lab5_checks_a_certificate():
+    assert [l["lab"] for l in client.get("/api/satlab/labs").json()] == [1, 2, 3, 4, 5]
+    r = client.post("/api/satlab/lab", json={"lab": 5}).json()
+    assert "UNSAT verified" in r["steps"][-1]["output"]
+    assert client.post("/api/satlab/lab", json={"lab": 9}).status_code == 422

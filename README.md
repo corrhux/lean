@@ -26,30 +26,33 @@ OpenTitan.
 | M6 tutor | `tutor ask/chat` (`tools/tutor`): Claude explains in Jasper terms on a 5-level hint ladder, with tools to compile Lean, look up course sections, read files, summarise counterexample waveforms and run twins. Tools are tested offline; the live API path needs `ANTHROPIC_API_KEY`. |
 | M7 web app | `pvs-app` (`app/`): a local, offline browser front end over the same tools. **Course reader**; **twin labs** where you edit the RTL and the Lean solution, run both sides on your version (the Lean model is regenerated from your RTL), read counterexamples and induction traces in a **waveform viewer**, and chart **parameter sweeps** (one MC run per value against one Lean theorem); a **live Lean editor** with errors as you type and the goal at the cursor (Lean's language server, as in VS Code); an **Ibex exam** view (edit, live goals, grade); the SAT solver zoo; and a **streaming tutor** that sees what you are working on. The tutor's live API path is untested here (no key). |
 
-## Quick start
+## Quick start (macOS or Linux)
 
 ```sh
-pip install -e ".[dev]" && pytest          # satlab
-satlab gen mul-miter --width 8 -o m8.cnf && satlab zoo m8.cnf
-lake build                                 # Lean library (needs elan)
-ftwin run counter                          # both sides of the counter twin
-sv2lean rtl/counter/counter.sv --top counter --difftest 10   # Lean model vs Yosys
-cd rtl/counter && sby -f counter.sby       # needs the OSS CAD Suite
+git clone https://github.com/corrhux/lean.git && cd lean
+./start
 ```
 
-Or open the repo in the dev container (`.devcontainer/`), which installs Lean,
-the OSS CAD Suite and the Python tools.
+That is all. `./start` checks for Python 3.11+ (on a Mac: `brew install python@3.12`
+if it says so), offers to install Lean, installs the course tools into `.venv`,
+builds the Lean library, and opens the course app at http://127.0.0.1:8000. The
+first run takes 10–20 minutes (downloading Lean and checking every proof); later
+runs take seconds. Everything runs on your machine; nothing listens beyond
+`127.0.0.1`. The optional AI tutor needs `ANTHROPIC_API_KEY=... ./start`.
 
-### Web app
+The app is the whole course in one window:
 
-```sh
-pip install -e ".[app]" && lake build
-pvs-app                                    # http://127.0.0.1:8000 (localhost only)
-docker compose -f docker/compose.yaml up   # or: the same, in the course image
-```
+| View | What you do there |
+|---|---|
+| **Course** | read the chapters, in order, starting with the course index |
+| **Twin labs** | run SymbiYosys and Lean on the same design; edit the RTL or the proof and rerun; counterexample waveforms; parameter sweeps |
+| **Lean workbook** | the lab exercises and a scratchpad, checked as you type, with the goal at the cursor |
+| **Ibex exam** | the capstone exam, with grading |
+| **SAT lab** | satlab's five labs at a click, and the solver zoo |
+| **Tutor** | questions about whatever you are working on (optional, needs an API key) |
 
-Everything works offline. The tutor pane is enabled only when
-`ANTHROPIC_API_KEY` is set on the machine running the app.
+Every view is also a command (`ftwin`, `satlab`, `sv2lean`, `pvs-exam`, `tutor`), for
+those who prefer a terminal; the course index gives both.
 
 ## The course
 

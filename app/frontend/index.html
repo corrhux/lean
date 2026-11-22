@@ -15,7 +15,7 @@
   <nav class="side" id="nav">
     <button data-view="course" class="active">Course</button>
     <button data-view="twins">Twin labs</button>
-    <button data-view="lean">Lean scratchpad</button>
+    <button data-view="lean">Lean workbook</button>
     <button data-view="exam">Ibex exam</button>
     <button data-view="sat">SAT lab</button>
     <button data-view="tutor">Tutor</button>
@@ -100,8 +100,14 @@
     </section>
 
     <section id="view-lean" class="view" hidden>
-      <p class="muted">Lean re-checks as you type, in this project: <code>import RtlProof</code> gives every
-        generated model and proof. Move the cursor into a proof to see its goal, as in VS Code's infoview.</p>
+      <div class="row">
+        <select id="wb-file" aria-label="File"></select>
+        <button id="wb-save" hidden>Save</button>
+        <button id="wb-solution" hidden>Show the solution</button>
+        <span id="wb-note" class="muted"></span>
+      </div>
+      <p class="muted">Lean re-checks as you type. Move the cursor into a proof to see what is left to prove.
+        The scratchpad is yours to experiment in (kept in this browser); exercises and exam files are saved to the repository.</p>
       <div class="split">
         <div><div id="scratch-editor"></div><div id="scratch-msgs" class="msgs"></div></div>
         <aside id="scratch-goals" class="goals"></aside>
@@ -130,6 +136,14 @@
     </section>
 
     <section id="view-sat" class="view" hidden>
+      <h2>Labs</h2>
+      <div class="row">
+        <select id="lab-select" aria-label="Lab"></select>
+        <button id="lab-run" class="primary">Run the lab</button>
+        <span id="lab-note" class="muted">Read the lab in the course first: Course → satlab/README.md.</span>
+      </div>
+      <div id="lab-out"></div>
+      <h2>Solver zoo</h2>
       <div class="row">
         <select id="sat-kind" aria-label="Instance">
           <option value="mul-miter">multiplier commutativity miter</option>
