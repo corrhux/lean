@@ -15,6 +15,19 @@ git submodule update --init     # lowRISC Ibex, for Part E
 
 The syllabus with learning objectives is [docs/COURSE.md](../docs/COURSE.md).
 
+**In the app** (`./start`), each chapter's "Do" column maps to one view:
+
+| Command in the table | In the app |
+|---|---|
+| `ftwin run <design>`, `ftwin bench <design>` | Twin labs → pick the design → Run both sides / Benchmark |
+| editing `Exercise.lean`, typing LEAN_FLUENCY examples | Lean workbook → pick the exercise, or the scratchpad |
+| satlab Labs 1–5 (`satlab gen/solve/trace/ablate/check`) | SAT lab → Labs |
+| `satlab zoo` | SAT lab → Solver zoo |
+| `pvs-exam` | Ibex exam → Save and grade |
+
+A few steps stay in a terminal: `sv2lean --difftest`, `capstone/ibex/generate.sh`, and
+the Jasper practical (E10).
+
 ---
 
 ## Part A: Orientation
