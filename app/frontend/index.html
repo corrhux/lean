@@ -13,16 +13,50 @@
 </header>
 <div class="shell">
   <nav class="side" id="nav">
-    <button data-view="course" class="active">Course</button>
+    <button data-view="home" class="navhome active">Start here</button>
+    <div class="navhead">Course, in order</div>
+    <div id="nav-course"></div>
+    <div class="navhead">Tools <span class="muted">(chapters open them for you)</span></div>
     <button data-view="twins">Twin labs</button>
     <button data-view="lean">Lean workbook</button>
-    <button data-view="exam">Ibex exam</button>
     <button data-view="sat">SAT lab</button>
+    <button data-view="exam">Ibex exam</button>
     <button data-view="tutor">Tutor</button>
+    <div class="navhead">Reference</div>
+    <button data-view="course">All documents</button>
   </nav>
   <main id="main">
 
-    <section id="view-course" class="view">
+    <div id="back-banner" class="backbar" hidden></div>
+
+    <section id="view-home" class="view">
+      <h1 class="hometitle">Proof vs. Search</h1>
+      <p class="lead">Theorem proving in Lean, next to the SAT-based model checking you know from Jasper,
+        on real RTL, ending with lowRISC's Ibex core.</p>
+      <ol class="howto">
+        <li><b>Follow the course in the sidebar, top to bottom.</b> Five parts, one chapter at a time.</li>
+        <li><b>Each chapter: read, then do.</b> The reading is on the chapter page; its buttons open the right
+          lab with everything selected. A bar at the top brings you back to the chapter.</li>
+        <li><b>Tick a chapter when you are done</b>, and go on with <em>Next</em>.</li>
+      </ol>
+      <p><button id="continue" class="primary big"></button></p>
+      <div id="home-parts" class="parts"></div>
+    </section>
+
+    <section id="view-chapter" class="view" hidden>
+      <div class="crumb" id="ch-crumb"></div>
+      <div class="chhead">
+        <h1 id="ch-title"></h1>
+        <label class="donebox"><input type="checkbox" id="ch-done"> I have done this chapter</label>
+      </div>
+      <div id="ch-do" class="dobox"></div>
+      <div id="ch-read"></div>
+      <div id="ch-do-bottom" class="dobox"></div>
+      <div class="chnav"><button id="ch-prev"></button><button id="ch-next" class="primary"></button></div>
+    </section>
+
+    <section id="view-course" class="view" hidden>
+      <p class="muted">Every document of the course. To learn, follow the chapters in the sidebar instead.</p>
       <div class="row">
         <select id="doc-select" aria-label="Document"></select>
       </div>

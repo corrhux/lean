@@ -223,23 +223,135 @@ function leanLive({ editor, key, msgsEl, goalsEl, statusEl, extra }) {
 }
 
 // ---------- navigation ----------
-let currentView = "course", workView = "lean";   // workView: where the tutor's context comes from
+let currentView = "home", workView = "lean";   // workView: where the tutor's context comes from
+const TOOL_VIEWS = new Set(["twins", "lean", "sat", "exam", "tutor"]);
 function show(view) {
   currentView = view;
   if (view === "twins" || view === "lean" || view === "exam") workView = view;
   document.querySelectorAll(".view").forEach((v) => (v.hidden = v.id !== `view-${view}`));
-  document.querySelectorAll("#nav button").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
+  document.querySelectorAll("#nav button[data-view]").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
+  document.querySelectorAll("#nav button[data-chapter]").forEach((b) =>
+    b.classList.toggle("active", view === "chapter" && b.dataset.chapter === course.current));
+  $("back-banner").hidden = !(TOOL_VIEWS.has(view) && course.from);
   if (view === "lean" && scratch.stale) scratch.sync();
   if (view === "exam") loadExam();
   if (view === "tutor") $("tutor-context-note").textContent = contextLabel();
+  if (view === "home") renderHome();
+  window.scrollTo(0, 0);
 }
-$("nav").addEventListener("click", (e) => { if (e.target.dataset.view) show(e.target.dataset.view); });
+$("nav").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.chapter) openChapter(b.dataset.chapter);
+  else if (b.dataset.view) show(b.dataset.view);
+});
+
+// ---------- the course path (course/outline.json) ----------
+const course = { parts: [], chapters: [], done: new Set(store.get("pvs.done") || []), current: store.get("pvs.chapter"), from: null };
+function chapterLabel(c) { return `${c.id === "EX" ? "Exam" : c.id} · ${c.title}`; }
+function renderNav() {
+  $("nav-course").innerHTML = course.parts.map((p) => {
+    const n = p.chapters.filter((c) => course.done.has(c.id)).length;
+    const open = p.chapters.some((c) => c.id === course.current) ? " open" : "";
+    return `<details class="part"${open}><summary><span>${esc(p.id)} · ${esc(p.title)}</span><span class="count">${n}/${p.chapters.length}</span></summary>` +
+      p.chapters.map((c) => `<button data-chapter="${esc(c.id)}" class="chapter${c.id === course.current && currentView === "chapter" ? " active" : ""}">` +
+        `<span class="tick">${course.done.has(c.id) ? "✓" : ""}</span><span class="cid">${esc(c.id === "EX" ? "Exam" : c.id)}</span> ${esc(c.title)}</button>`).join("") +
+      `</details>`;
+  }).join("");
+}
+function renderHome() {
+  const next = course.chapters.find((c) => !course.done.has(c.id)) || course.chapters[0];
+  const resume = course.current && !course.done.has(course.current) ? course.chapters.find((c) => c.id === course.current) : next;
+  if (resume) {
+    $("continue").textContent = course.done.size || course.current ? `Continue: ${chapterLabel(resume)}` : `Start: ${chapterLabel(resume)}`;
+    $("continue").onclick = () => openChapter(resume.id);
+  }
+  $("home-parts").innerHTML = course.parts.map((p) => {
+    const n = p.chapters.filter((c) => course.done.has(c.id)).length;
+    return `<div class="partcard"><div class="parthead"><b>Part ${esc(p.id)}</b> ${esc(p.title)}<span class="count">${n} of ${p.chapters.length} done</span></div>
+      <div class="bar"><i style="width:${(100 * n / p.chapters.length).toFixed(0)}%"></i></div>
+      <div class="chips">${p.chapters.map((c) => `<button data-chapter="${esc(c.id)}" class="${course.done.has(c.id) ? "isdone" : ""}">${esc(c.id === "EX" ? "Exam" : c.id)}</button>`).join("")}</div></div>`;
+  }).join("");
+}
+$("home-parts").addEventListener("click", (e) => { const b = e.target.closest("button[data-chapter]"); if (b) openChapter(b.dataset.chapter); });
+
+function actionButtons(ch, big) {
+  if (!ch.do.length) return `<p class="muted">This chapter is reading only.</p>`;
+  return `<span class="dolabel">${big ? "Do" : "Then"}:</span>` + ch.do.map((a, k) =>
+    `<button class="${k === 0 ? "primary" : ""}" data-action="${k}">${esc(a.label)} →</button>`).join("");
+}
+async function openChapter(id) {
+  const k = course.chapters.findIndex((c) => c.id === id);
+  if (k < 0) return;
+  course.current = id; store.set("pvs.chapter", id);
+  course.from = null;
+  show("chapter");
+  renderNav();
+  const ch = await api(`/api/course/${encodeURIComponent(id)}`);
+  course.ch = ch;
+  $("ch-crumb").textContent = `Part ${ch.part.id} · ${ch.part.title} · chapter ${k + 1} of ${course.chapters.length}`;
+  $("ch-title").textContent = chapterLabel(ch);
+  $("ch-done").checked = course.done.has(id);
+  $("ch-do").innerHTML = actionButtons(ch, true);
+  $("ch-do-bottom").innerHTML = ch.do.length ? actionButtons(ch, false) : "";
+  $("ch-read").innerHTML = ch.sections.map((s) => {
+    const body = s.doc.endsWith(".md") ? markdown(s.text) : `<pre><code>${highlight(s.text, s.doc.endsWith(".sv") ? "sv" : "lean")}</code></pre>`;
+    return `<div class="source">from <a href="#" data-doc-open="${esc(s.doc)}">${esc(s.doc)}</a></div><article class="md" data-base="${esc(s.doc)}">${body}</article>`;
+  }).join("");
+  const prev = course.chapters[k - 1], next = course.chapters[k + 1];
+  $("ch-prev").hidden = !prev; $("ch-next").hidden = !next;
+  if (prev) { $("ch-prev").textContent = `← ${chapterLabel(prev)}`; $("ch-prev").onclick = () => openChapter(prev.id); }
+  if (next) { $("ch-next").textContent = `${chapterLabel(next)} →`; $("ch-next").onclick = () => openChapter(next.id); }
+  window.scrollTo(0, 0);
+}
+$("ch-done").addEventListener("change", (e) => {
+  if (e.target.checked) course.done.add(course.current); else course.done.delete(course.current);
+  store.set("pvs.done", [...course.done]);
+  renderNav();
+});
+for (const box of ["ch-do", "ch-do-bottom"]) {
+  $(box).addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-action]");
+    if (b) runAction(course.ch, course.ch.do[+b.dataset.action]);
+  });
+}
+async function runAction(ch, a) {
+  course.from = ch;
+  $("back-banner").innerHTML = `From chapter <b>${esc(chapterLabel(ch))}</b> · <a href="#" id="bb-back">back to the chapter</a>`;
+  $("bb-back").onclick = (e) => { e.preventDefault(); openChapter(ch.id); };
+  if (a.view === "twins") {
+    show("twins");
+    if (!twin || twin.name !== a.design) { $("design-select").value = a.design; await selectDesign(a.design); }
+    showTab(a.tab || "verdicts");
+  } else if (a.view === "lean") {
+    show("lean");
+    if (!wb.files.length) await loadWorkbook();
+    if (wb.current !== a.file) openWorkbook(a.file);
+  } else if (a.view === "sat") {
+    show("sat");
+    if (a.lab) { $("lab-select").value = String(a.lab); $("lab-note").textContent = "Press Run the lab."; $("lab-out").innerHTML = ""; }
+    if (a.zoo) {
+      $("sat-kind").value = a.zoo; if (a.width) $("sat-width").value = a.width;
+      $("sat-note").textContent = "Press Run the solver zoo; the variable and clause counts are at the top.";
+      $("sat-run").scrollIntoView({ block: "center" });
+    }
+  } else if (a.view === "exam") {
+    show("exam");
+  } else if (a.view === "docs") {
+    show("course"); openDoc(a.doc);
+  }
+  $("back-banner").hidden = false;
+}
 
 // ---------- course ----------
 let currentDoc = "course/README.md";
 async function openDoc(path) {
   currentDoc = path;
+  if (!$("doc-select").querySelector(`option[value="${CSS.escape(path)}"]`)) {
+    $("doc-select").insertAdjacentHTML("beforeend", `<option value="${esc(path)}">${esc(path)}</option>`);
+  }
   $("doc-select").value = path;
+  $("doc").dataset.base = path;
   try {
     const text = await api(`/api/file?path=${encodeURIComponent(path)}`);
     if (path.endsWith(".md")) $("doc").innerHTML = markdown(text);
@@ -247,17 +359,15 @@ async function openDoc(path) {
   } catch (e) { $("doc").innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
   window.scrollTo(0, 0);
 }
-$("doc").addEventListener("click", (e) => {
+document.addEventListener("click", (e) => {
+  const open = e.target.closest("a[data-doc-open]");
+  if (open) { e.preventDefault(); show("course"); openDoc(open.dataset.docOpen); return; }
   const a = e.target.closest("a[data-doc]");
   if (!a) return;
   e.preventDefault();
-  const target = resolveDoc(currentDoc, a.dataset.doc);
-  if (target) {
-    if (!$("doc-select").querySelector(`option[value="${CSS.escape(target)}"]`)) {
-      $("doc-select").insertAdjacentHTML("beforeend", `<option value="${esc(target)}">${esc(target)}</option>`);
-    }
-    openDoc(target);
-  }
+  const base = a.closest("[data-base]")?.dataset.base || currentDoc;
+  const target = resolveDoc(base, a.dataset.doc);
+  if (target) { show("course"); openDoc(target); }
 });
 $("doc-select").addEventListener("change", (e) => openDoc(e.target.value));
 
@@ -597,7 +707,7 @@ $("exam-grade").addEventListener("click", async () => {
   } catch (e) { $("exam-note").textContent = e.message; }
   btn.disabled = false;
 });
-$("exam-prep").addEventListener("click", (e) => { e.preventDefault(); show("course"); openDoc("docs/CAPSTONE_EXAM_PREP.md"); });
+$("exam-prep").addEventListener("click", (e) => { e.preventDefault(); openChapter("E5"); });
 
 // ---------- SAT lab: the five labs, then the zoo ----------
 api("/api/satlab/labs").then((labs) => {
@@ -696,6 +806,11 @@ $("tutor-ask").addEventListener("click", async () => {
   $("status").innerHTML = [flag("lean", "Lean"), flag("sby", "SymbiYosys"), flag("ibex", "Ibex"), flag("tutor", "tutor")].join(" · ");
   if (!st.tutor) { $("tutor-ask").disabled = true; $("tutor-note").textContent = "unavailable: no ANTHROPIC_API_KEY on the server"; }
   loadWorkbook().catch(() => {});
+  const outline = await api("/api/course");
+  course.parts = outline.parts;
+  course.chapters = outline.parts.flatMap((p) => p.chapters);
+  renderNav();
+  show("home");
   const docs = await api("/api/docs-list");
   $("doc-select").innerHTML = docs.map((d) => `<option value="${esc(d.path)}">${esc(d.title)}</option>`).join("");
   openDoc("course/README.md");
