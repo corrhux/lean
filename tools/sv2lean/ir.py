@@ -26,7 +26,7 @@ COMB_TYPES = {
     "$eq", "$ne", "$eqx", "$nex", "$lt", "$le", "$gt", "$ge",
     "$logic_not", "$logic_and", "$logic_or",
     "$reduce_and", "$reduce_or", "$reduce_bool", "$reduce_xor", "$reduce_xnor",
-    "$shl", "$shr", "$sshl", "$sshr", "$mux", "$pmux",
+    "$shl", "$shr", "$sshl", "$sshr", "$shiftx", "$mux", "$pmux",
 }
 FORMAL_TYPES = {"$assert", "$assume", "$cover"}
 
@@ -202,6 +202,17 @@ def build(module: dict, top: str) -> Design:
         for k, b in enumerate(p["bits"]):
             d.driver[b] = (sig, k)
 
+    # A flop with an asynchronous reset is lowered (async2sync) to a plain flop followed by
+    # a reset mux, and the RTL's name (e.g. `md_state_q`) lands on the mux output. Name such
+    # a flop after it: `md_state_q_ff`.
+    reset_mux_name: Dict[Tuple[int, ...], str] = {}
+    for c in cells.values():
+        if c["type"] == "$mux":
+            out = exact_name(c["connections"]["Y"])
+            if out:
+                for side in ("A", "B"):
+                    reset_mux_name.setdefault(tuple(c["connections"][side]), out)
+
     # ---- registers, $anyseq / $anyconst
     for cname, c in sorted(cells.items()):
         t = c["type"]
@@ -209,6 +220,8 @@ def build(module: dict, top: str) -> Design:
             q = c["connections"]["Q"]
             yn = exact_name(q, prefer_visible=False)
             vis = exact_name(q)
+            if not vis and tuple(q) in reset_mux_name:
+                vis = reset_mux_name[tuple(q)] + "_ff"
             sig = Signal(_ident(vis or f"r_{len(d.regs)}", used), len(q), "reg", yn)
             reg = Reg(sig, c["connections"]["D"], q, [init_of.get(b) for b in q])
             d.regs.append(reg)

@@ -76,3 +76,9 @@ def test_check_lean_reports_success_errors_and_sorry():
     assert hole["uses_sorry"]
     project = tools.check_lean("import RtlProof\n#check Gen.Counter.p_le_9_holds")
     assert project["ok"], project
+
+
+def test_read_file_refuses_exam_solutions():
+    assert tools.read_file("capstone/exam/solutions/MultDiv.lean").startswith("Refused")
+    assert tools.read_file("capstone/exam/../exam/solutions/LoadStore.lean").startswith("Refused")
+    assert not tools.read_file("RtlProof/Exam/Ibex/Statements.lean").startswith("Refused")

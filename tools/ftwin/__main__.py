@@ -91,7 +91,10 @@ def run_sby(design: str, ddir: Path, cfg: dict, asserts: List[str], workdir: Pat
             engine = m_eng.group(1)
         done = re.search(r"DONE \((\w+), rc=(\d+)\)", log)
         verdict = done.group(1) if done else "ERROR"
-        failed = re.findall(r"Assert failed in \S+: (\S+)", log)
+        failed = re.findall(r"(?<!induction): +## +\S+ +Assert failed in \S+: (\S+)", log)
+        # a failing induction step is not a counterexample: the base case passed, so the
+        # verdict is UNKNOWN (Jasper: "undetermined"); the trace starts in an arbitrary state
+        induct = re.findall(r"induction: +## +\S+ +Assert failed in \S+: (\S+)", log)
         steps = [int(s) for s in re.findall(r"Checking assertions in step (\d+)", log)]
         fail_step = steps[-1] if (failed and steps) else None
         reached = re.findall(r"Reached cover statement in step (\d+) at \S+: (\S+)", log)
@@ -101,7 +104,15 @@ def run_sby(design: str, ddir: Path, cfg: dict, asserts: List[str], workdir: Pat
                 out.append(Result(design, "mc", engine, label, "covered", int(step), dt, task=task))
             continue
         for label in asserts:
-            if label in failed:
+            if verdict == "UNKNOWN" and label in induct and label not in failed:
+                ivcd = workdir / f"{Path(sby_file).stem}_{task}" / "engine_0" / "trace_induct.vcd"
+                out.append(Result(design, "mc", engine, label, "inconclusive", depth, dt,
+                                  str(ivcd) if ivcd.exists() else None, task=task,
+                                  note=f"induction step fails at k={depth}; base case passed"))
+            elif verdict == "UNKNOWN" and induct:
+                out.append(Result(design, "mc", engine, label, "unchecked", depth, dt, task=task,
+                                  note="induction stopped at the first failing assertion"))
+            elif label in failed:
                 out.append(Result(design, "mc", engine, label, "cex", fail_step, dt,
                                   str(vcd) if vcd.exists() else None, task=task,
                                   note="expected" if task == "bug" else ""))
@@ -129,16 +140,31 @@ def run_lean(design: str, cfg: dict, asserts: List[str]) -> List[Result]:
         return [Result(design, "lean", "lean", a, "error", note=(b.stdout + b.stderr)[-400:])
                 for a in asserts]
     thms = lean.get("theorems", {})
-    probe = [f"import {lean['module']}"] + [f"#print axioms {thms[a]}" for a in asserts if a in thms]
+    out = check_theorems(design, f"import {lean['module']}\n", thms, asserts, lake)
+    for r in out:
+        if r.status in ("proved", "sorry"):
+            r.time_s = build_s
+    return out
+
+
+def check_theorems(design: str, source: str, thms: Dict[str, str], asserts: List[str],
+                   lake: Optional[str] = None) -> List[Result]:
+    """Compile `source` followed by `#print axioms` for each theorem; one Result per assert."""
+    lake = lake or os.environ.get("LAKE") or shutil.which("lake") or str(Path.home() / ".elan/bin/lake")
+    probe = [source.rstrip("\n")] + [f"#print axioms {thms[a]}" for a in asserts if a in thms]
     (REPO / "build").mkdir(exist_ok=True)
     with tempfile.NamedTemporaryFile("w", suffix=".lean", dir=REPO / "build", delete=False) as f:
         f.write("\n".join(probe) + "\n")
         path = f.name
+    t0 = time.perf_counter()
     try:
         p = subprocess.run([lake, "env", "lean", path], cwd=REPO, capture_output=True, text=True)
     finally:
         os.unlink(path)
+    dt = round(time.perf_counter() - t0, 2)
     text = p.stdout + p.stderr
+    errors = [l for l in text.splitlines() if ": error" in l]
+    out: List[Result] = []
     for a in asserts:
         if a not in thms:
             out.append(Result(design, "lean", "lean", a, "missing", note="no theorem in twin.toml"))
@@ -150,10 +176,16 @@ def run_lean(design: str, cfg: dict, asserts: List[str]) -> List[Result]:
         elif f"'{name}' does not depend on any axioms" in text:
             axioms = []
         else:
-            out.append(Result(design, "lean", "lean", a, "error", note=text[-300:]))
+            out.append(Result(design, "lean", "lean", a, "error", time_s=dt,
+                              note=(errors[0] if errors else text[-300:])[:400]))
+            continue
+        if "sorryAx" in axioms and errors:
+            # Lean replaces a proof that fails with `sorry` so it can keep going
+            out.append(Result(design, "lean", "lean", a, "failed", time_s=dt, axioms=axioms,
+                              note=f"{name}: {errors[0][:300]}"))
             continue
         status = "sorry" if "sorryAx" in axioms else "proved"
-        out.append(Result(design, "lean", "lean (kernel-checked)", a, status, time_s=build_s,
+        out.append(Result(design, "lean", "lean (kernel-checked)", a, status, time_s=dt,
                           axioms=axioms, note=name))
     return out
 
@@ -198,7 +230,7 @@ def cmd_run(a: argparse.Namespace) -> int:
     if a.json:
         Path(a.json).parent.mkdir(parents=True, exist_ok=True)
         Path(a.json).write_text(json.dumps([asdict(r) for r in results], indent=2))
-    bad = [r for r in results if r.status in ("error",) or (r.status == "cex" and r.note != "expected")]
+    bad = [r for r in results if r.status in ("error", "failed") or (r.status == "cex" and r.note != "expected")]
     return 1 if bad else 0
 
 

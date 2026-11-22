@@ -29,10 +29,11 @@ sv2lean = "sv2lean.__main__:main"
 ftwin = "ftwin.__main__:main"
 tutor = "tutor.__main__:main"
 pvs-app = "app.backend.main:main"
+pvs-exam = "pvs_exam.__main__:main"
 
 [tool.setuptools.packages.find]
 where = [".", "tools"]
-include = ["satlab*", "sv2lean*", "ftwin*", "tutor*", "app*"]
+include = ["satlab*", "sv2lean*", "ftwin*", "tutor*", "app*", "pvs_exam*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -115,13 +115,51 @@ HAVE_SV2V = bool(os.environ.get("SV2V") or shutil.which("sv2v") or Path("/opt/sv
     ("ibex_compressed_decoder", {"RV32ZC": 0, "BaseIsa": 0}, []),
     ("ibex_decoder", {"RV32M": 0, "RV32B": 0, "BaseIsa": 0}, ["rtl/ibex_cheriot_pkg.sv"]),
     ("ibex_register_file_ff", {"BaseIsa": 0, "RV32E": 0, "DummyInstructions": 0}, ["rtl/ibex_cheriot_pkg.sv"]),
+    ("ibex_load_store_unit", {"BaseIsa": 0, "MemECC": 0}, ["rtl/ibex_cheriot_pkg.sv"]),
+    ("ibex_multdiv_slow", {}, []),
 ])
 def test_ibex_blocks_match_yosys(top, params, extra):
     files = [str(IBEX / "rtl/ibex_pkg.sv")] + [str(IBEX / e) for e in extra] + [str(IBEX / f"rtl/{top}.sv")]
     doc = frontend.netlist_json(files, top, params,
                                 use_sv2v=True, defines=["SYNTHESIS"],
-                                includes=[str(IBEX / "vendor/lowrisc_ip/ip/prim/rtl"), str(IBEX / "rtl")])
+                                includes=[str(IBEX / "vendor/lowrisc_ip/ip/prim/rtl"),
+                                          str(IBEX / "vendor/lowrisc_ip/dv/sv/dv_utils"), str(IBEX / "rtl")])
     d = ir.build(doc["modules"][top], top)
     text = emit_lean.emit(d, f"T.{top}")
     res = difftest.run(doc, d, text, f"T.{top}", seeds=3, cycles=60)
     assert res.ok, res.summary()
+
+
+def _work(name):
+    """Scratch space inside the repository: the WebAssembly Yosys cannot read /tmp."""
+    d = REPO / "build" / "tests" / name
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def test_variable_bit_select_only_when_in_range():
+    tmp_path = _work("shiftx")
+    """`a[i]` becomes Yosys `$shiftx`; reading past the end of `a` is x in Verilog, so the
+    translator accepts it only when every index is in range."""
+    ok = tmp_path / "sel_ok.sv"
+    ok.write_text("module sel_ok(input logic [7:0] a, input logic [2:0] i, output logic y);\n"
+                  "  assign y = a[i];\nendmodule\n")
+    doc, d, text = generate([ok], "sel_ok", "T.SelOk")
+    res = difftest.run(doc, d, text, "T.SelOk", seeds=3, cycles=20)
+    assert res.ok, res.summary()
+    bad = tmp_path / "sel_bad.sv"
+    bad.write_text("module sel_bad(input logic [5:0] a, input logic [2:0] i, output logic y);\n"
+                   "  assign y = a[i];\nendmodule\n")
+    with pytest.raises(ir.UnsupportedDesign, match="out of range"):
+        generate([bad], "sel_bad", "T.SelBad")
+
+
+def test_async_reset_flops_are_named_after_the_rtl():
+    tmp_path = _work("async_reset")
+    f = tmp_path / "ar.sv"
+    f.write_text("module ar(input logic clk, input logic rst_ni, input logic [3:0] d, output logic [3:0] q);\n"
+                 "  logic [3:0] cnt_q;\n"
+                 "  always_ff @(posedge clk or negedge rst_ni) if (!rst_ni) cnt_q <= '0; else cnt_q <= d;\n"
+                 "  assign q = cnt_q + 4'd1;\nendmodule\n")
+    doc, d, text = generate([f], "ar", "T.Ar")
+    assert "cnt_q_ff : BitVec 4" in text

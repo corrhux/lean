@@ -278,23 +278,34 @@ UI (CLI / pane) ─► context.py: {module, file excerpt, goals (LSP $/lean/plai
   component used by lean4web / VS Code), Surfer WASM in an iframe for VCDs,
   chart component, mdBook HTML embedded for the reader, tutor pane.
 
-**As built (first increment).** To stay usable offline with no Node toolchain,
-the first web app is smaller than the plan above:
+**As built.** To stay usable offline with no Node toolchain, the app uses no
+frontend libraries and no build step; the plan's components were replaced by
+small purpose-built ones:
 
-- `app/backend/main.py` (FastAPI) wraps the CLI tools directly, so the browser
-  and the command line always agree: `GET /api/designs`,
-  `POST /api/designs/{name}/run` (`ftwin run`), `GET /api/file` and
-  `GET /api/cex` (the tutor's sandboxed `read_file` and `cex_summary`),
-  `POST /api/lean/check` (the tutor's `check_lean`), `POST /api/satlab/zoo`,
-  `POST /api/tutor` (503 without `ANTHROPIC_API_KEY`), `GET /api/status`.
-  Requests are validated by pydantic (instance kind, size and timeout bounds);
-  binds to 127.0.0.1 unless told otherwise.
-- `app/frontend/` is one HTML page, one stylesheet and one script with no
-  libraries and no build step, including a small Markdown renderer for the
-  course reader.
-- Still to do from the plan: Monaco editors, a live Lean infoview over a Lean
-  server websocket, Surfer for waveforms (counterexamples show as per-step
-  tables), benchmark charts, and streaming tutor answers.
+| Planned | Built | Where |
+|---|---|---|
+| Monaco editors | a textarea over a highlighted `<pre>` (Lean and SystemVerilog highlighting, gutter, error squiggles) | `app/frontend/app.js` `makeEditor` |
+| `@leanprover/infoview` over a websocket | one persistent `lake env lean --server` per app; `POST /api/lean/sync` sends the whole document and waits for elaboration, `POST /api/lean/goal` asks `$/lean/plainGoal` and `$/lean/plainTermGoal` | `app/backend/lean_lsp.py` |
+| twin pane | edits go to `build/app/work/<design>/`; SymbiYosys runs on the edited RTL; `sv2lean` regenerates the model and the live Lean document is *regenerated model + your solution* (positions mapped back) | `app/backend/workspace.py` |
+| Surfer (WASM) | an SVG waveform from `GET /api/vcd`, one sample per clock step, click a step to read every value | `drawWave` |
+| benchmark charts | `POST /api/designs/{name}/bench` (`ftwin bench`), SVG log-time chart: MC per parameter value vs one Lean theorem | `drawBench` |
+| SSE tutor | `POST /api/tutor/stream`: the SDK tool runner with `stream=True`; text deltas, tool calls and token counts as server-sent events; the page sends its live editor state as context | `tools/tutor/client.py` `Tutor.stream` |
+
+`ftwin` distinguishes a failing **induction step** (`inconclusive`, with the
+induction trace: Jasper's *undetermined*) from a real counterexample, and a Lean
+proof that **fails** (`failed`, with the error) from one that uses `sorry`.
+
+### 4.7 Ibex exam grader (`tools/pvs_exam`, `pvs-exam`)
+
+Statements live in `RtlProof/Exam/Ibex/Statements.lean` as `def X : Prop`; the
+learner's files prove `theorem X : Stmt.X`. The grader appends
+`example : Stmt.X := X` (the statement must match) and `#print axioms X` (only
+Lean's three axioms and `bv_decide`'s certificates score) to a copy of each file and
+compiles it; errors are attributed to items by line range. `Spec.lean`,
+`Statements.lean` and the models are hash-checked (`capstone/exam/protected.sha256`).
+CI grades the reference solutions (`capstone/exam/solutions/`, which the tutor and
+the app refuse to read) and requires 100/100, and runs `capstone/exam/simcheck.lean`
+for the open challenge.
 
 ## 5. CI design
 

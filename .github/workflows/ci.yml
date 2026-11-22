@@ -62,14 +62,25 @@ jobs:
           mkdir -p "$HOME/.local/bin" && install -m 755 /tmp/sv2v/sv2v-Linux/sv2v "$HOME/.local/bin/sv2v"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: lake build
-      - name: No sorry in the library (exercises excluded)
-        run: "! grep -rn --include='*.lean' --exclude='Exercise.lean' -w sorry RtlProof"
-      - name: Exercises compile (with their sorries)
-        run: for f in $(find RtlProof -name Exercise.lean); do lake env lean "$f"; done
-      - name: Course code compiles (LEAN_FLUENCY.md)
-        run: python3 tools/lean_blocks.py docs/LEAN_FLUENCY.md
-      - name: sv2lean, ftwin, tutor-tool and web-app tests (difftests, mutation tests, twin report, API)
-        run: pytest -q tests/sv2lean tests/ftwin tests/tutor tests/app
+      - name: No sorry in the library (exercises and the learner's exam files excluded)
+        run: |
+          ! grep -rn --include='*.lean' --exclude='Exercise.lean' -w sorry RtlProof \
+            | grep -v '^RtlProof/Exam/Ibex/\(MultDiv\|LoadStore\)\.lean:'
+      - name: Exercises and exam files compile (with their sorries)
+        run: |
+          for f in $(find RtlProof -name Exercise.lean) RtlProof/Exam/Ibex/MultDiv.lean RtlProof/Exam/Ibex/LoadStore.lean; do
+            lake env lean "$f"
+          done
+      - name: Course code compiles (LEAN_FLUENCY.md, CAPSTONE_EXAM_PREP.md)
+        run: |
+          python3 tools/lean_blocks.py docs/LEAN_FLUENCY.md
+          python3 tools/lean_blocks.py docs/CAPSTONE_EXAM_PREP.md
+      - name: Ibex exam - reference solutions score 100, statements untouched
+        run: pvs-exam --reference
+      - name: Ibex exam - the challenge statement holds on 400 random cases
+        run: lake env lean capstone/exam/simcheck.lean | tee /dev/stderr | grep -qx '(0, 400)'
+      - name: sv2lean, ftwin, tutor-tool, web-app and grader tests (difftests, mutation tests, twin report, API)
+        run: pytest -q tests/sv2lean tests/ftwin tests/tutor tests/app tests/exam
       - name: Generated models are up to date
         run: |
           sv2lean rtl/counter/counter.sv --top counter --namespace Gen.Counter \

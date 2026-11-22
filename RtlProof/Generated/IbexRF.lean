@@ -36,37 +36,37 @@ deriving Repr, DecidableEq, Inhabited
 
 /-- Registers of `ibex_register_file_ff`. -/
 structure State where
-  r_0 : BitVec 32
-  r_1 : BitVec 32
-  r_2 : BitVec 32
-  r_3 : BitVec 32
-  r_4 : BitVec 32
-  r_5 : BitVec 32
-  r_6 : BitVec 32
-  r_7 : BitVec 32
-  r_8 : BitVec 32
-  r_9 : BitVec 32
-  r_10 : BitVec 32
-  r_11 : BitVec 32
-  r_12 : BitVec 32
-  r_13 : BitVec 32
-  r_14 : BitVec 32
-  r_15 : BitVec 32
-  r_16 : BitVec 32
-  r_17 : BitVec 32
-  r_18 : BitVec 32
-  r_19 : BitVec 32
-  r_20 : BitVec 32
-  r_21 : BitVec 32
-  r_22 : BitVec 32
-  r_23 : BitVec 32
-  r_24 : BitVec 32
-  r_25 : BitVec 32
-  r_26 : BitVec 32
-  r_27 : BitVec 32
-  r_28 : BitVec 32
-  r_29 : BitVec 32
-  r_30 : BitVec 32
+  g_plain_rf_g_rf_flops_20_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_19_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_18_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_17_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_16_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_15_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_14_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_13_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_12_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_11_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_10_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_9_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_8_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_7_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_6_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_5_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_4_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_3_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_2_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_1_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_31_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_30_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_29_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_28_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_27_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_26_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_25_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_24_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_23_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_22_rf_reg_q_ff : BitVec 32
+  g_plain_rf_g_rf_flops_21_rf_reg_q_ff : BitVec 32
 deriving Repr, DecidableEq, Inhabited
 
 /-- Combinational signals. -/
@@ -422,67 +422,67 @@ def comb (s : State) (i : Input) : Comb :=
   -- $mux sv2v/ibex_register_file_ff.sv2v.v:162.22-162.65
   let w61 : BitVec 1 := (if w30 = 1#1 then i.we_a_i else 0#1)
   -- $mux $auto$async2sync.cc:262:execute$1099
-  let g_plain_rf_g_rf_flops_20_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_0 else 0#32)
+  let g_plain_rf_g_rf_flops_20_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_20_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1101
-  let g_plain_rf_g_rf_flops_19_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_1 else 0#32)
+  let g_plain_rf_g_rf_flops_19_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_19_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1103
-  let g_plain_rf_g_rf_flops_18_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_2 else 0#32)
+  let g_plain_rf_g_rf_flops_18_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_18_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1105
-  let g_plain_rf_g_rf_flops_17_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_3 else 0#32)
+  let g_plain_rf_g_rf_flops_17_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_17_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1107
-  let g_plain_rf_g_rf_flops_16_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_4 else 0#32)
+  let g_plain_rf_g_rf_flops_16_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_16_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1109
-  let g_plain_rf_g_rf_flops_15_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_5 else 0#32)
+  let g_plain_rf_g_rf_flops_15_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_15_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1111
-  let g_plain_rf_g_rf_flops_14_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_6 else 0#32)
+  let g_plain_rf_g_rf_flops_14_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_14_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1113
-  let g_plain_rf_g_rf_flops_13_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_7 else 0#32)
+  let g_plain_rf_g_rf_flops_13_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_13_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1115
-  let g_plain_rf_g_rf_flops_12_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_8 else 0#32)
+  let g_plain_rf_g_rf_flops_12_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_12_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1117
-  let g_plain_rf_g_rf_flops_11_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_9 else 0#32)
+  let g_plain_rf_g_rf_flops_11_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_11_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1119
-  let g_plain_rf_g_rf_flops_10_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_10 else 0#32)
+  let g_plain_rf_g_rf_flops_10_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_10_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1121
-  let g_plain_rf_g_rf_flops_9_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_11 else 0#32)
+  let g_plain_rf_g_rf_flops_9_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_9_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1123
-  let g_plain_rf_g_rf_flops_8_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_12 else 0#32)
+  let g_plain_rf_g_rf_flops_8_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_8_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1125
-  let g_plain_rf_g_rf_flops_7_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_13 else 0#32)
+  let g_plain_rf_g_rf_flops_7_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_7_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1127
-  let g_plain_rf_g_rf_flops_6_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_14 else 0#32)
+  let g_plain_rf_g_rf_flops_6_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_6_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1129
-  let g_plain_rf_g_rf_flops_5_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_15 else 0#32)
+  let g_plain_rf_g_rf_flops_5_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_5_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1131
-  let g_plain_rf_g_rf_flops_4_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_16 else 0#32)
+  let g_plain_rf_g_rf_flops_4_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_4_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1133
-  let g_plain_rf_g_rf_flops_3_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_17 else 0#32)
+  let g_plain_rf_g_rf_flops_3_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_3_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1135
-  let g_plain_rf_g_rf_flops_2_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_18 else 0#32)
+  let g_plain_rf_g_rf_flops_2_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_2_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1137
-  let g_plain_rf_g_rf_flops_1_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_19 else 0#32)
+  let g_plain_rf_g_rf_flops_1_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_1_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1139
-  let g_plain_rf_g_rf_flops_31_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_20 else 0#32)
+  let g_plain_rf_g_rf_flops_31_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_31_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1141
-  let g_plain_rf_g_rf_flops_30_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_21 else 0#32)
+  let g_plain_rf_g_rf_flops_30_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_30_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1143
-  let g_plain_rf_g_rf_flops_29_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_22 else 0#32)
+  let g_plain_rf_g_rf_flops_29_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_29_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1145
-  let g_plain_rf_g_rf_flops_28_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_23 else 0#32)
+  let g_plain_rf_g_rf_flops_28_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_28_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1147
-  let g_plain_rf_g_rf_flops_27_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_24 else 0#32)
+  let g_plain_rf_g_rf_flops_27_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_27_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1149
-  let g_plain_rf_g_rf_flops_26_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_25 else 0#32)
+  let g_plain_rf_g_rf_flops_26_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_26_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1151
-  let g_plain_rf_g_rf_flops_25_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_26 else 0#32)
+  let g_plain_rf_g_rf_flops_25_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_25_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1153
-  let g_plain_rf_g_rf_flops_24_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_27 else 0#32)
+  let g_plain_rf_g_rf_flops_24_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_24_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1155
-  let g_plain_rf_g_rf_flops_23_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_28 else 0#32)
+  let g_plain_rf_g_rf_flops_23_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_23_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1157
-  let g_plain_rf_g_rf_flops_22_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_29 else 0#32)
+  let g_plain_rf_g_rf_flops_22_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_22_rf_reg_q_ff else 0#32)
   -- $mux $auto$async2sync.cc:262:execute$1159
-  let g_plain_rf_g_rf_flops_21_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.r_30 else 0#32)
+  let g_plain_rf_g_rf_flops_21_rf_reg_q : BitVec 32 := (if i.rst_ni = 1#1 then s.g_plain_rf_g_rf_flops_21_rf_reg_q_ff else 0#32)
   -- $mux sv2v/ibex_register_file_ff.sv2v.v:174.15-174.26|sv2v/ibex_register_file_ff.sv2v.v:174.11-175.29
   let w200 : BitVec 32 := (if w51 = 1#1 then i.wdata_a_i else g_plain_rf_g_rf_flops_21_rf_reg_q)
   -- $mux $auto$ff.cc:614:unmap_srst$1160
@@ -757,43 +757,43 @@ def outputs (s : State) (i : Input) : Outputs :=
 /-- One clock edge. -/
 def step (s : State) (i : Input) : State :=
   let w := comb s i
-  { r_0 := w.w123,
-    r_1 := w.w122,
-    r_2 := w.w121,
-    r_3 := w.w120,
-    r_4 := w.w119,
-    r_5 := w.w118,
-    r_6 := w.w117,
-    r_7 := w.w116,
-    r_8 := w.w115,
-    r_9 := w.w114,
-    r_10 := w.w113,
-    r_11 := w.w112,
-    r_12 := w.w111,
-    r_13 := w.w110,
-    r_14 := w.w109,
-    r_15 := w.w108,
-    r_16 := w.w107,
-    r_17 := w.w106,
-    r_18 := w.w105,
-    r_19 := w.w104,
-    r_20 := w.w103,
-    r_21 := w.w102,
-    r_22 := w.w101,
-    r_23 := w.w100,
-    r_24 := w.w99,
-    r_25 := w.w98,
-    r_26 := w.w97,
-    r_27 := w.w96,
-    r_28 := w.w95,
-    r_29 := w.w94,
-    r_30 := w.w93 }
+  { g_plain_rf_g_rf_flops_20_rf_reg_q_ff := w.w123,
+    g_plain_rf_g_rf_flops_19_rf_reg_q_ff := w.w122,
+    g_plain_rf_g_rf_flops_18_rf_reg_q_ff := w.w121,
+    g_plain_rf_g_rf_flops_17_rf_reg_q_ff := w.w120,
+    g_plain_rf_g_rf_flops_16_rf_reg_q_ff := w.w119,
+    g_plain_rf_g_rf_flops_15_rf_reg_q_ff := w.w118,
+    g_plain_rf_g_rf_flops_14_rf_reg_q_ff := w.w117,
+    g_plain_rf_g_rf_flops_13_rf_reg_q_ff := w.w116,
+    g_plain_rf_g_rf_flops_12_rf_reg_q_ff := w.w115,
+    g_plain_rf_g_rf_flops_11_rf_reg_q_ff := w.w114,
+    g_plain_rf_g_rf_flops_10_rf_reg_q_ff := w.w113,
+    g_plain_rf_g_rf_flops_9_rf_reg_q_ff := w.w112,
+    g_plain_rf_g_rf_flops_8_rf_reg_q_ff := w.w111,
+    g_plain_rf_g_rf_flops_7_rf_reg_q_ff := w.w110,
+    g_plain_rf_g_rf_flops_6_rf_reg_q_ff := w.w109,
+    g_plain_rf_g_rf_flops_5_rf_reg_q_ff := w.w108,
+    g_plain_rf_g_rf_flops_4_rf_reg_q_ff := w.w107,
+    g_plain_rf_g_rf_flops_3_rf_reg_q_ff := w.w106,
+    g_plain_rf_g_rf_flops_2_rf_reg_q_ff := w.w105,
+    g_plain_rf_g_rf_flops_1_rf_reg_q_ff := w.w104,
+    g_plain_rf_g_rf_flops_31_rf_reg_q_ff := w.w103,
+    g_plain_rf_g_rf_flops_30_rf_reg_q_ff := w.w102,
+    g_plain_rf_g_rf_flops_29_rf_reg_q_ff := w.w101,
+    g_plain_rf_g_rf_flops_28_rf_reg_q_ff := w.w100,
+    g_plain_rf_g_rf_flops_27_rf_reg_q_ff := w.w99,
+    g_plain_rf_g_rf_flops_26_rf_reg_q_ff := w.w98,
+    g_plain_rf_g_rf_flops_25_rf_reg_q_ff := w.w97,
+    g_plain_rf_g_rf_flops_24_rf_reg_q_ff := w.w96,
+    g_plain_rf_g_rf_flops_23_rf_reg_q_ff := w.w95,
+    g_plain_rf_g_rf_flops_22_rf_reg_q_ff := w.w94,
+    g_plain_rf_g_rf_flops_21_rf_reg_q_ff := w.w93 }
 
 /-- Initial-value constraints from `initial` blocks / `init` attributes. -/
 def initOK (s : State) : Prop := True
 
 /-- A concrete initial state: `init` values where given, 0 elsewhere. -/
-def init0 : State := { r_0 := 0#32, r_1 := 0#32, r_2 := 0#32, r_3 := 0#32, r_4 := 0#32, r_5 := 0#32, r_6 := 0#32, r_7 := 0#32, r_8 := 0#32, r_9 := 0#32, r_10 := 0#32, r_11 := 0#32, r_12 := 0#32, r_13 := 0#32, r_14 := 0#32, r_15 := 0#32, r_16 := 0#32, r_17 := 0#32, r_18 := 0#32, r_19 := 0#32, r_20 := 0#32, r_21 := 0#32, r_22 := 0#32, r_23 := 0#32, r_24 := 0#32, r_25 := 0#32, r_26 := 0#32, r_27 := 0#32, r_28 := 0#32, r_29 := 0#32, r_30 := 0#32 }
+def init0 : State := { g_plain_rf_g_rf_flops_20_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_19_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_18_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_17_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_16_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_15_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_14_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_13_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_12_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_11_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_10_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_9_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_8_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_7_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_6_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_5_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_4_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_3_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_2_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_1_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_31_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_30_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_29_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_28_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_27_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_26_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_25_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_24_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_23_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_22_rf_reg_q_ff := 0#32, g_plain_rf_g_rf_flops_21_rf_reg_q_ff := 0#32 }
 
 /-- All `assume`s, as one predicate on the current state and inputs. -/
 def assumptions (_s : State) (_i : Input) : Prop := True

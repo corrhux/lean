@@ -16,6 +16,7 @@
     <button data-view="course" class="active">Course</button>
     <button data-view="twins">Twin labs</button>
     <button data-view="lean">Lean scratchpad</button>
+    <button data-view="exam">Ibex exam</button>
     <button data-view="sat">SAT lab</button>
     <button data-view="tutor">Tutor</button>
   </nav>
@@ -32,29 +33,100 @@
       <div class="row">
         <select id="design-select" aria-label="Design"></select>
         <button id="run-design" class="primary">Run both sides</button>
+        <button id="reset-edits" hidden>Discard my edits</button>
+        <span id="edit-note" class="badge" hidden>edited</span>
         <span id="run-note" class="muted"></span>
       </div>
-      <h2>Verdicts</h2>
-      <p class="muted">Model checking (SymbiYosys) next to Lean, for every property. "∞" means the
-        Lean theorem holds at every cycle; "trusts" is what <code>#print axioms</code> reports.</p>
-      <div class="scroll"><table id="verdicts"><tbody><tr><td class="muted">Run the design, or pick one with a saved run.</td></tr></tbody></table></div>
-      <h2>Files</h2>
-      <div id="files" class="chips"></div>
-      <h2 id="viewer-title">Viewer</h2>
-      <pre id="viewer" class="code">Pick a file or a counterexample.</pre>
-      <article id="viewer-md" class="md" hidden></article>
+      <div class="tabs" id="twin-tabs" role="tablist">
+        <button data-tab="verdicts" class="active">Verdicts</button>
+        <button data-tab="rtl">RTL</button>
+        <button data-tab="lean">Lean</button>
+        <button data-tab="wave">Waveform</button>
+        <button data-tab="bench">Benchmark</button>
+        <button data-tab="files">Files</button>
+      </div>
+
+      <div class="pane" data-pane="verdicts">
+        <p class="muted">Model checking (SymbiYosys) next to Lean, for every property. "∞" means the
+          Lean theorem holds at every cycle; "trusts" is what <code>#print axioms</code> reports.
+          "inconclusive" is Jasper's <em>undetermined</em>: the induction step failed but no real trace was found.</p>
+        <div class="scroll"><table id="verdicts"><tbody><tr><td class="muted">Run the design, or pick one with a saved run.</td></tr></tbody></table></div>
+      </div>
+
+      <div class="pane" data-pane="rtl" hidden>
+        <div class="row">
+          <select id="rtl-file" aria-label="RTL file"></select>
+          <span class="muted">Edit freely: edits live in <code>build/app/work/</code>, the repository is untouched.
+            "Run both sides" checks your version, and the Lean tab re-generates the model from it.</span>
+        </div>
+        <div id="rtl-editor"></div>
+      </div>
+
+      <div class="pane" data-pane="lean" hidden>
+        <div class="row"><code id="twin-lean-path" class="muted"></code><span id="twin-lean-status" class="muted"></span></div>
+        <div class="split">
+          <div><div id="twin-lean-editor"></div><div id="twin-lean-msgs" class="msgs"></div></div>
+          <aside id="twin-lean-goals" class="goals"></aside>
+        </div>
+      </div>
+
+      <div class="pane" data-pane="wave" hidden>
+        <div class="row">
+          <strong id="wave-title">No trace selected</strong>
+          <label class="muted"><input type="checkbox" id="wave-internal"> show formal-tool signals</label>
+          <span class="muted">Click a step to read every value at that cycle.</span>
+        </div>
+        <div id="wave" class="wave"><p class="muted">Pick "counterexample" or "induction trace" in the verdicts table.</p></div>
+        <details><summary>as a table</summary><pre id="wave-table" class="code"></pre></details>
+      </div>
+
+      <div class="pane" data-pane="bench" hidden>
+        <p class="muted" id="bench-about"></p>
+        <div class="row">
+          <button id="bench-run" class="primary">Run the sweep</button>
+          <label>timeout per value (s) <input id="bench-timeout" type="number" value="60" min="5" max="600"></label>
+          <span id="bench-note" class="muted"></span>
+        </div>
+        <div id="bench-chart" class="chart"></div>
+        <div class="scroll"><table id="bench-table"></table></div>
+      </div>
+
+      <div class="pane" data-pane="files" hidden>
+        <div id="files" class="chips"></div>
+        <h2 id="viewer-title">Viewer</h2>
+        <pre id="viewer" class="code">Pick a file.</pre>
+        <article id="viewer-md" class="md" hidden></article>
+      </div>
     </section>
 
     <section id="view-lean" class="view" hidden>
-      <p class="muted">Compiles in this project: <code>import RtlProof</code> gives you every generated model and
-        proof. With no import lines, <code>import RtlProof</code> and <code>import Std.Tactic.BVDecide</code> are added.</p>
-      <textarea id="lean-code" spellcheck="false">theorem xor_cancel (x y : BitVec 32) : (x ^^^ y) ^^^ y = x := by bv_decide
-#print axioms xor_cancel
+      <p class="muted">Lean re-checks as you type, in this project: <code>import RtlProof</code> gives every
+        generated model and proof. Move the cursor into a proof to see its goal, as in VS Code's infoview.</p>
+      <div class="split">
+        <div><div id="scratch-editor"></div><div id="scratch-msgs" class="msgs"></div></div>
+        <aside id="scratch-goals" class="goals"></aside>
+      </div>
+      <p id="scratch-status" class="muted"></p>
+    </section>
 
--- try a false one and read the counterexample:
--- example (x : BitVec 8) : x + 1#8 > x := by bv_decide</textarea>
-      <div class="row"><button id="lean-check" class="primary">Check</button><span id="lean-note" class="muted"></span></div>
-      <pre id="lean-out" class="code"></pre>
+    <section id="view-exam" class="view" hidden>
+      <p class="muted">Prove Ibex's multiplier/divider and load/store unit. Statements:
+        <code>RtlProof/Exam/Ibex/Statements.lean</code>; preparation: the course's
+        <a href="#" id="exam-prep">exam prep chapters (E5–E11)</a>. Saving writes your exam file;
+        grading runs <code>pvs-exam</code> on the saved files.</p>
+      <div class="row">
+        <select id="exam-part" aria-label="Exam part"></select>
+        <button id="exam-save">Save</button>
+        <button id="exam-grade" class="primary">Save and grade</button>
+        <span id="exam-note" class="muted"></span>
+      </div>
+      <div class="split">
+        <div><div id="exam-editor"></div><div id="exam-msgs" class="msgs"></div></div>
+        <aside id="exam-goals" class="goals"></aside>
+      </div>
+      <p id="exam-status" class="muted"></p>
+      <h2>Score</h2>
+      <div class="scroll"><table id="exam-score"><tbody><tr><td class="muted">Not graded yet.</td></tr></tbody></table></div>
     </section>
 
     <section id="view-sat" class="view" hidden>
@@ -84,15 +156,18 @@
             <option value="1">1 nudge</option><option value="2" selected>2 concept</option>
             <option value="3">3 tactic</option><option value="4">4 step</option><option value="5">5 solution</option>
           </select></label>
-        <input id="tutor-file" placeholder="file you are working on, e.g. RtlProof/Examples/Counter/Exercise.lean" size="60">
+        <label><input type="checkbox" id="tutor-context" checked> include what I'm working on</label>
+        <span id="tutor-context-note" class="muted"></span>
       </div>
       <textarea id="tutor-q" placeholder="Ask a question…"></textarea>
       <div class="row"><button id="tutor-ask" class="primary">Ask</button><span id="tutor-note" class="muted"></span></div>
+      <div id="tutor-tools" class="chips"></div>
       <article id="tutor-out" class="md"></article>
     </section>
 
   </main>
 </div>
+<div id="tip" class="tip" hidden></div>
 <script src="/static/app.js"></script>
 </body>
 </html>

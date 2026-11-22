@@ -83,8 +83,15 @@ def lean_diagnostics(path: Path, timeout_s: int = 180) -> str:
 
 
 def user_message(question: str, level: int, file: Optional[str] = None,
-                 design: Optional[str] = None) -> str:
+                 design: Optional[str] = None, context: Optional[str] = None) -> str:
+    """The per-question message. `context` is live editor state from the web app
+    (possibly unsaved edits, Lean's messages, the goal at the cursor); when given it
+    replaces reading `file` from disk."""
     parts = [f"Hint level: {level} ({LADDER[level].split(':')[0]})"]
+    if context:
+        parts.append("What the learner is working on (live from the web app, may include unsaved "
+                     f"edits):\n{_clip(context, 40000)}")
+        file = None
     if design:
         parts.append(f"Twin lab: rtl/{design}")
     if file:

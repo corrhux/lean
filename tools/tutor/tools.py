@@ -15,6 +15,8 @@ from typing import Dict, List, Optional, Tuple
 REPO = Path(__file__).resolve().parents[2]
 READABLE_DIRS = ("docs", "course", "capstone", "rtl", "RtlProof", "satlab", "tools", "tests")
 READABLE_FILES = ("README.md",)
+# The exam's reference solutions: the tutor teaches, it does not hand over answers.
+UNREADABLE_DIRS = ("capstone/exam/solutions",)
 MAX_FILE_CHARS = 40_000
 MAX_OUTPUT_CHARS = 12_000
 
@@ -110,6 +112,8 @@ def read_file(path: str) -> str:
     rel = p.relative_to(REPO).parts if REPO in p.parents else ()
     if not rel or (rel[0] not in READABLE_DIRS and "/".join(rel) not in READABLE_FILES):
         return f"Refused: {path!r} is outside the readable project folders {READABLE_DIRS}."
+    if any("/".join(rel).startswith(d + "/") or "/".join(rel) == d for d in UNREADABLE_DIRS):
+        return f"Refused: {path!r} holds the exam's reference solutions, which the tutor does not read."
     if not p.is_file():
         return f"No such file: {path}"
     return _clip(p.read_text(errors="replace"), MAX_FILE_CHARS)
