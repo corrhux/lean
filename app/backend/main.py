@@ -278,6 +278,55 @@ def lean_check(req: LeanCheck) -> dict:
     return ttools.check_lean(req.code)
 
 
+# ------------------------------------------------------------------------ course path
+OUTLINE = REPO / "course" / "outline.json"
+
+
+def doc_section(text: str, prefix: Optional[str]) -> Optional[str]:
+    """The Markdown section whose heading starts with `prefix` (up to the next heading of the
+    same or a higher level), or the whole text if `prefix` is None. `#` lines inside code
+    fences are not headings."""
+    if prefix is None:
+        return text
+    lines, fence, start, level = text.splitlines(), False, None, 0
+    for k, line in enumerate(lines):
+        if line.startswith("```"):
+            fence = not fence
+            continue
+        m = None if fence else re.match(r"^(#{1,6})\s+(.*)$", line)
+        if not m:
+            continue
+        if start is None:
+            if m.group(2).startswith(prefix):
+                start, level = k, len(m.group(1))
+        elif len(m.group(1)) <= level:
+            return "\n".join(lines[start:k]).rstrip() + "\n"
+    return None if start is None else "\n".join(lines[start:]).rstrip() + "\n"
+
+
+@app.get("/api/course")
+def course() -> dict:
+    """The course path: parts and chapters, in order (course/outline.json)."""
+    return json.loads(OUTLINE.read_text())
+
+
+@app.get("/api/course/{chapter}")
+def course_chapter(chapter: str) -> dict:
+    """One chapter: its reading, extracted from the course documents, and its actions."""
+    for part in course()["parts"]:
+        for ch in part["chapters"]:
+            if ch["id"] == chapter:
+                sections = []
+                for r in ch["read"]:
+                    text = (REPO / r["doc"]).read_text()
+                    sec = doc_section(text, r.get("heading"))
+                    if sec is None:
+                        raise HTTPException(500, f"{r['doc']}: no section starting {r['heading']!r}")
+                    sections.append({"doc": r["doc"], "heading": r.get("heading"), "text": sec})
+                return {**ch, "part": {"id": part["id"], "title": part["title"]}, "sections": sections}
+    raise HTTPException(404, f"no chapter {chapter!r}")
+
+
 DOCS = ["course/README.md", "docs/LEAN_FLUENCY.md", "docs/COURSE.md", "docs/CAPSTONE_PRIMER.md",
         "docs/CAPSTONE_IBEX.md", "capstone/ibex/README.md", "docs/CAPSTONE_EXAM_PREP.md", "capstone/exam/README.md", "satlab/README.md", "docs/SPEC.md",
         "docs/ARCHITECTURE.md", "docs/REFERENCES.md", "README.md"]

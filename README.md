@@ -40,16 +40,23 @@ first run takes 10–20 minutes (downloading Lean and checking every proof); lat
 runs take seconds. Everything runs on your machine; nothing listens beyond
 `127.0.0.1`. The optional AI tutor needs `ANTHROPIC_API_KEY=... ./start`.
 
-The app is the whole course in one window:
+The app is the whole course in one window. The **sidebar is the course**: Parts A–E,
+chapter by chapter, in the order to follow them. Each chapter page has the reading
+and a *Do* button that opens the right lab with everything selected; a bar at the top
+of the lab takes you back. Tick a chapter when done; the home page shows your
+progress and a *Continue* button. Below the course, the tools are also there to use
+directly:
 
-| View | What you do there |
+| Tool | What it does |
 |---|---|
-| **Course** | read the chapters, in order, starting with the course index |
-| **Twin labs** | run SymbiYosys and Lean on the same design; edit the RTL or the proof and rerun; counterexample waveforms; parameter sweeps |
+| **Twin labs** | SymbiYosys and Lean on the same design; edit the RTL or the proof and rerun; counterexample waveforms; parameter sweeps |
 | **Lean workbook** | the lab exercises and a scratchpad, checked as you type, with the goal at the cursor |
-| **Ibex exam** | the capstone exam, with grading |
 | **SAT lab** | satlab's five labs at a click, and the solver zoo |
+| **Ibex exam** | the capstone exam, with grading |
 | **Tutor** | questions about whatever you are working on (optional, needs an API key) |
+
+The chapter list lives in `course/outline.json`; `course/README.md` is the same path for
+reading on GitHub or working in a terminal.
 
 Every view is also a command (`ftwin`, `satlab`, `sv2lean`, `pvs-exam`, `tutor`), for
 those who prefer a terminal; the course index gives both.
